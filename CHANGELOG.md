@@ -4,6 +4,141 @@ All notable changes to AZKA MEUBEL project.
 
 ---
 
+## [1.3.0] - 2026-10-13
+
+### 🔒 Major Security & Runtime Update - Astro 7 + Node.js 24
+
+**Fixed critical vulnerabilities and upgraded to Astro 7 with Node.js 24 runtime**
+
+#### Security Fixes:
+✅ **Production Dependencies: 0 vulnerabilities** (100% resolved)
+- Fixed CVE-2026-54298: XSS via unescaped spread attributes (critical)
+- Fixed CVE-2026-96889: librsvg vulnerability in sharp
+- Fixed CVE-2026-33327, CVE-2026-33328: libvips vulnerabilities
+- Fixed esbuild arbitrary file read on Windows
+- Fixed GHSA-9wv6-86v2-598j: path-to-regexp DoS via override to v6.3.0
+
+✅ Dev Dependencies: 7 vulnerabilities (Tailwind CSS 3.x - not in production bundle)
+
+#### Major Upgrades:
+✅ **Astro**: `5.18.2` → `7.3.8` (latest stable)
+- Fixed all XSS vulnerabilities
+- Fixed host header SSRF
+- Fixed authorization bypass issues
+- Fixed remote code execution via AVIF optimization
+
+✅ **@astrojs/vercel**: `8.2.11` → `11.0.14` (latest stable)
+- Enhanced routing security
+- Better runtime compatibility
+
+✅ **@astrojs/check**: `0.9.0` → `0.9.10`
+
+✅ **path-to-regexp**: `6.1.0` → `6.3.0` (via npm overrides)
+- Resolved DoS vulnerability while maintaining v6 compatibility
+- Build verified without redirect pattern errors
+
+✅ **Node.js**: `22` → `24`
+- `.nvmrc`: Updated to 24
+- `package.json`: engines.node → `>=24.0.0`
+- Vercel runtime will use Node.js 24.x
+
+#### Tailwind Migration:
+✅ Migrated from **@astrojs/tailwind** integration to **native Vite + PostCSS**:
+- Removed deprecated `@astrojs/tailwind` (incompatible with Astro 7)
+- Configured Tailwind 3 via Vite CSS pipeline
+- Added PostCSS config with autoprefixer
+- All custom design preserved (colors, spacing, fonts, utilities)
+
+#### Configuration Changes:
+- `astro.config.mjs`: Removed Tailwind integration, added Vite CSS config
+- `postcss.config.cjs`: Added for Tailwind processing
+- `package.json`: Added npm overrides for path-to-regexp
+- Disabled Vercel web analytics and speed insights (not used)
+
+#### Verification:
+- ✅ Build successful: 0 errors
+- ✅ All routes working (15 pages)
+- ✅ Server rendering maintained
+- ✅ Supabase integration working
+- ✅ Tailwind classes preserved
+- ✅ **Production audit: 0 vulnerabilities** ⭐
+- ✅ path-to-regexp: 6.3.0 (overridden, compatible)
+- ✅ Redirect patterns: Working correctly
+
+#### Dependency Tree (Production):
+```
+azka-meubel@1.0.0
+├── @astrojs/check@0.9.10
+├── @astrojs/vercel@11.0.14
+│   └── @vercel/routing-utils@6.6.0
+│       └── path-to-regexp@6.3.0 (overridden)
+├── @supabase/supabase-js@2.45.0
+├── astro@7.3.8
+└── typescript@5.6.0
+```
+
+#### Files Changed:
+- `.nvmrc`
+- `package.json` (overrides added)
+- `package-lock.json`
+- `astro.config.mjs`
+- `postcss.config.cjs` (new)
+- `CHANGELOG.md`
+
+#### Breaking Changes Handled:
+- Tailwind integration API change (migrated to Vite)
+- Astro adapter API updates (applied)
+- path-to-regexp syntax compatibility (override to v6.3.0)
+- No visual or functional changes to website
+
+---
+
+## [1.2.0] - 2026-10-13
+
+### 🚀 Deployment Fix - Vercel Runtime Compatibility
+
+**Fixed first deployment failure by upgrading Astro and adapter to support Node.js 22.x runtime**
+
+#### Problem:
+- First Vercel deployment failed with "Invalid function runtime: nodejs18.x"
+- Build was successful but Vercel rejected serverless functions
+- Project was using outdated Astro 4 and adapter v7
+
+#### Solution:
+✅ Upgraded to latest stable versions:
+- Astro: `4.15.0` → `5.18.2`
+- @astrojs/vercel: `7.8.0` → `8.2.11`
+- Node.js requirement: `>=18.0.0` → `>=22.0.0`
+
+✅ Updated adapter import (deprecated warning fixed):
+- From: `@astrojs/vercel/serverless`
+- To: `@astrojs/vercel`
+
+✅ Configuration updated:
+- `.nvmrc`: `18` → `22`
+- `package.json`: engines.node → `>=22.0.0`
+- `astro.config.mjs`: Updated adapter import
+
+#### Verification:
+- ✅ Runtime output: **nodejs22.x** (confirmed in `.vc-config.json`)
+- ✅ Build successful: 0 errors
+- ✅ No deprecation warnings
+- ✅ All features preserved (admin, products, Supabase integration)
+
+#### Files Changed:
+- `.nvmrc`
+- `package.json`
+- `package-lock.json`
+- `astro.config.mjs`
+
+#### Deployment Readiness:
+- ✅ Compatible with Vercel's latest runtime requirements
+- ✅ Server rendering mode maintained
+- ✅ All integrations (Tailwind, Supabase) working
+- ✅ Ready for production deployment
+
+---
+
 ## [1.1.0] - 2026-10-09
 
 ### ✅ Verified - Supabase API Key Configuration
