@@ -1,0 +1,164 @@
+---
+import '../../styles/global.css';
+
+// Note: Server-side session check won't work with localStorage
+// We handle auth check on client-side below
+---
+
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Admin | AZKA MEUBEL</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-background">
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+          <h1 class="font-headline-md text-on-surface uppercase tracking-tight mb-2">
+            AZKA MEUBEL
+          </h1>
+          <p class="font-label-md text-on-surface-variant uppercase">Admin Panel</p>
+        </div>
+
+        <div class="bg-surface-container-lowest p-8 border border-surface-container-highest shadow-sm">
+          <h2 class="font-headline-sm text-on-surface mb-6">Login</h2>
+          
+          <form id="login-form" class="space-y-6">
+            <div class="space-y-2">
+              <label for="email" class="font-label-sm uppercase text-on-surface block">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+                placeholder="admin@azkameubel.com"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="password" class="font-label-sm uppercase text-on-surface block">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div id="error-message" class="hidden">
+              <p class="font-body-sm px-4 py-3" style="color: #ba1a1a; background-color: #ffdad6;"></p>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full bg-primary text-on-primary py-3 px-6 font-label-md uppercase tracking-wider hover:bg-secondary transition-colors"
+            >
+              Login
+            </button>
+          </form>
+        </div>
+
+        <p class="text-center font-body-sm text-on-surface-variant mt-6">
+          <a href="/" class="hover:text-primary transition-colors">
+            ← Kembali ke Website
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script is:inline define:vars={{ supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, supabaseKey: import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}>
+      const { createClient } = supabase;
+      const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+      // Check if already logged in
+      (async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) {
+          window.location.href = '/admin';
+        }
+      })();
+
+      const form = document.getElementById('login-form');
+      const errorDiv = document.getElementById('error-message');
+
+      form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const email = formData.get('email');
+        const password = formData.get('password');
+
+        try {
+          // Sign in with Supabase
+          const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          if (!data.session || !data.user) {
+            throw new Error('Sesi tidak dapat dibuat');
+          }
+
+          console.log('Login successful, user ID:', data.user.id);
+
+          // Check admin role with maybeSingle() to handle RLS properly
+          const { data: profile, error: profileError } = await supabaseClient
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .maybeSingle();
+
+          console.log('Profile query result:', { profile, profileError });
+
+          // If there's a database/RLS error (not just "not found")
+          if (profileError) {
+            console.error('Profile query error:', profileError);
+            throw new Error(`Database error: ${profileError.message}`);
+          }
+
+          // Profile not found in database
+          if (!profile) {
+            console.error('Profile not found for user:', data.user.id);
+            throw new Error('Profil admin tidak ditemukan. Hubungi administrator.');
+          }
+
+          // User exists but not admin
+          if (profile.role !== 'admin') {
+            console.warn('User is not admin:', profile.role);
+            await supabaseClient.auth.signOut();
+            throw new Error('Anda tidak memiliki akses admin');
+          }
+
+          console.log('Admin verified, redirecting...');
+          
+          // Redirect to admin dashboard
+          window.location.href = '/admin';
+        } catch (error) {
+          console.error('Login error:', error);
+          if (errorDiv) {
+            errorDiv.classList.remove('hidden');
+            const p = errorDiv.querySelector('p');
+            if (p) {
+              p.textContent = error.message || 'Login gagal. Periksa email dan password Anda.';
+            }
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

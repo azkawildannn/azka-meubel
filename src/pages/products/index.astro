@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { getPublishedProducts } from '../../lib/products';
+
+const categorySlug = Astro.url.searchParams.get('category');
+const products = await getPublishedProducts(categorySlug || undefined);
+
+const categories = [
+  { name: 'Semua Produk', slug: '' },
+  { name: 'Kursi', slug: 'kursi' },
+  { name: 'Sofa', slug: 'sofa' },
+  { name: 'Meja', slug: 'meja' },
+  { name: 'Lemari', slug: 'lemari' },
+  { name: 'Kamar Tidur', slug: 'kamar-tidur' },
+  { name: 'Ruang Kerja', slug: 'ruang-kerja' }
+];
+---
+
+<BaseLayout
+  title="Koleksi Furnitur | AZKA MEUBEL"
+  description="Jelajahi koleksi lengkap furnitur AZKA MEUBEL. Kursi, sofa, meja, dan lebih banyak lagi dengan desain minimalis dan material berkualitas."
+>
+  <!-- Header -->
+  <section class="w-full pt-12 pb-10 bg-background">
+    <div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin">
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-10 border-b border-surface-container-highest">
+        <div class="max-w-2xl space-y-4">
+          <div class="flex items-center gap-3">
+            <span class="w-6 h-px bg-on-surface-variant"></span>
+            <span class="font-label-sm uppercase tracking-widest text-secondary">
+              KATALOG PRODUK
+            </span>
+          </div>
+          <h1 class="font-display-xl tracking-tight text-on-surface">Koleksi Furnitur</h1>
+          <p class="font-body-lg text-on-surface-variant">
+            Temukan berbagai pilihan furnitur untuk melengkapi ruang tamu, kamar tidur, ruang kerja, dan area lainnya. Pilih kategori untuk melihat produk yang sesuai dengan kebutuhan Anda.
+          </p>
+        </div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="pt-8 pb-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+          {categories.map(cat => (
+            <a
+              href={cat.slug ? `/products?category=${cat.slug}` : '/products'}
+              class={`px-5 py-2.5 font-label-md uppercase transition-colors ${
+                (!categorySlug && !cat.slug) || categorySlug === cat.slug
+                  ? 'bg-primary text-on-primary'
+                  : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
+              }`}
+            >
+              {cat.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Products Grid -->
+  <section class="w-full pb-20 bg-background">
+    <div class="max-w-[1440px] mx-auto px-4 md:px-margin">
+      <div class="flex items-center justify-between pb-6 pt-2 text-on-surface-variant border-b border-surface-container-highest mb-6 md:mb-10">
+        <span class="font-label-sm uppercase tracking-widest text-xs md:text-sm">
+          Menampilkan {products.length} {products.length === 1 ? 'produk' : 'produk'}
+        </span>
+        <span class="font-label-sm uppercase tracking-widest hidden sm:inline text-xs md:text-sm">
+          Koleksi Azka Meubel
+        </span>
+      </div>
+
+      {products.length > 0 ? (
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-x-8 md:gap-y-14">
+          {products.map(product => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-20">
+          <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-4 block">
+            inventory_2
+          </span>
+          <h3 class="font-headline-sm text-on-surface mb-2">
+            Produk Belum Tersedia
+          </h3>
+          <p class="font-body-md text-on-surface-variant mb-6">
+            Belum ada produk dalam kategori ini. Silakan pilih kategori lain untuk melihat koleksi yang tersedia.
+          </p>
+          <a
+            href="/products"
+            class="inline-flex items-center gap-2 font-label-md uppercase text-primary hover:text-secondary transition-colors"
+          >
+            <span>Lihat Semua Produk</span>
+            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>

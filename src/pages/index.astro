@@ -1,0 +1,307 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { getFeaturedProducts } from '../lib/products';
+
+let featuredProducts: any[] = [];
+try {
+  featuredProducts = await getFeaturedProducts(6);
+} catch (error) {
+  console.error('Error loading products:', error);
+}
+
+const whatsappNumber = import.meta.env.PUBLIC_WHATSAPP_NUMBER || '';
+
+const categories = [
+  {
+    name: 'Ruang Tamu & Sofa',
+    slug: 'sofa',
+    description: 'Pilihan sofa untuk melengkapi ruang tamu dan tempat berkumpul bersama keluarga.',
+    image: 'https://images.unsplash.com/photo-1615971677499-5467cbab01c0?q=80&w=580&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
+    label: 'RUANG TAMU'
+  },
+  {
+    name: 'Kursi Makan',
+    slug: 'kursi',
+    description: 'Pilihan kursi untuk melengkapi area makan di rumah.',
+    image: 'https://plus.unsplash.com/premium_photo-1683140941523-f1fbbabe54d5?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
+    label: 'RUANG MAKAN'
+  },
+  {
+    name: 'Kamar Tidur',
+    slug: 'kamar-tidur',
+    description: 'Pilihan furnitur untuk melengkapi dan menata kamar tidur Anda.',
+    image: 'https://media.istockphoto.com/id/1459975257/id/foto/dinding-mockup-dengan-latar-belakang-interior-kamar-tidur-dengan-latar-belakang-dinding-hijau.jpg?s=1024x1024&w=is&k=20&c=gzR0ktxVAZkt-TfUAYgmasT15E-dWDAbYF1PrB7dA4k=',
+    label: 'KAMAR TIDUR'
+  },
+  {
+    name: 'Ruang Kerja & Penyimpanan',
+    slug: 'ruang-kerja',
+    description: 'Meja kerja dan tempat penyimpanan untuk kebutuhan ruang kerja Anda.',
+    image: 'https://plus.unsplash.com/premium_photo-1682608389022-e30aae063fcc?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
+    label: 'RUANG KERJA'
+  }
+];
+---
+
+<BaseLayout
+  title="AZKA MEUBEL | Katalog Furnitur Berkualitas"
+  description="Temukan pilihan furnitur berkualitas untuk kebutuhan rumah Anda. Jelajahi katalog dan hubungi kami untuk menanyakan detail produk."
+>
+  <!-- HERO SECTION -->
+  <section class="relative w-full -mt-14 md:-mt-20 overflow-hidden bg-surface-container">
+    <div class="relative w-full h-[92vh] min-h-[640px] max-h-[960px]">
+      <img
+        alt="Interior ruang tamu minimalis AZKA MEUBEL"
+        class="w-full h-full object-cover object-center brightness-[0.96]"
+        src="https://i.pinimg.com/1200x/78/1a/7a/781a7a90ba143864053f426461c22c6a.jpg"
+      />
+      <div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/25 to-transparent"></div>
+      
+      <div class="absolute inset-0 flex flex-col justify-center md:justify-end">
+        <div class="max-w-[1440px] w-full mx-auto px-4 md:px-margin pb-16 md:pb-24 pt-20 md:pt-0">
+          <div class="max-w-3xl space-y-5 md:space-y-6">
+            <div class="flex items-center gap-3">
+              <span class="inline-block w-8 h-[1px] bg-surface-container-highest"></span>
+              <span class="font-label-sm text-label-sm uppercase tracking-[0.25em] text-surface-container-low">
+                PILIHAN FURNITUR AZKA MEUBEL
+              </span>
+            </div>
+            
+            <h1 class="font-display-xl text-[2.25rem] md:text-display-xl text-inverse-on-surface leading-[1.1] md:leading-[1.05] tracking-tight">
+              Furnitur Berkualitas untuk Kebutuhan Rumah Anda
+            </h1>
+            
+            <p class="font-body-lg text-body-lg text-surface-container-highest/90 max-w-xl font-light">
+              Temukan pilihan furnitur untuk melengkapi ruang di rumah Anda. Jelajahi katalog dan hubungi kami untuk menanyakan detail serta ketersediaan produk.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4">
+              <a
+                class="inline-flex items-center justify-center bg-inverse-on-surface text-primary px-8 py-4 font-label-md text-label-md uppercase tracking-[0.16em] hover:bg-surface-container-highest transition-colors duration-200"
+                href="#featured-products"
+              >
+                Lihat Produk
+              </a>
+              {whatsappNumber && (
+                <a
+                  class="inline-flex items-center justify-center gap-3 bg-surface-container-lowest/15 backdrop-blur-md border-0 text-inverse-on-surface px-7 py-4 font-label-md text-label-md uppercase tracking-[0.16em] hover:bg-surface-container-lowest/25 transition-colors duration-200"
+                  href={`https://wa.me/${whatsappNumber}`}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span class="material-symbols-outlined text-[18px]">chat</span>
+                  <span>Tanya via WhatsApp</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOP BY CATEGORIES SECTION -->
+  <section class="w-full py-24 bg-background">
+    <div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-14">
+        <div>
+          <span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary block mb-2">
+            Kategori Produk
+          </span>
+          <h2 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-on-surface">
+            Jelajahi Kategori
+          </h2>
+        </div>
+        <p class="font-body-md text-body-md text-on-surface-variant max-w-md mt-4 md:mt-0">
+          Pilih kategori untuk menemukan furnitur yang sesuai dengan kebutuhan ruang Anda.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {categories.map((cat, index) => (
+          <a
+            class="group flex flex-col bg-surface-container-low transition-all duration-300 hover:shadow-md"
+            href={`/products?category=${cat.slug}`}
+          >
+            <div class="relative w-full aspect-[4/5] overflow-hidden bg-surface-container">
+              <img
+                alt={cat.name}
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                loading="lazy"
+                src={cat.image}
+              />
+              <span class="absolute top-4 left-4 bg-background/90 backdrop-blur-sm px-3 py-1 font-label-sm text-label-sm uppercase tracking-wider text-on-surface">
+                {`0${index + 1} • ${cat.label}`}
+              </span>
+            </div>
+            <div class="p-6 flex flex-col justify-between flex-grow">
+              <div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface mb-1 group-hover:text-secondary transition-colors">
+                  {cat.name}
+                </h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  {cat.description}
+                </p>
+              </div>
+              <div class="mt-6 flex items-center justify-end font-label-sm text-label-sm uppercase tracking-wider text-secondary">
+                <span class="material-symbols-outlined text-[16px] transition-transform group-hover:translate-x-1">
+                  arrow_forward
+                </span>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED EDITORIAL SPREAD -->
+  <section class="w-full py-24 bg-surface-container-low">
+    <div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        <div class="lg:col-span-7">
+          <div class="relative w-full aspect-[16/11] overflow-hidden bg-surface-container shadow-sm">
+            <img
+              alt="Ruang minimalis dengan furnitur AZKA MEUBEL"
+              class="w-full h-full object-cover"
+              loading="lazy"
+              src="https://i.pinimg.com/1200x/a6/45/d5/a645d5d8a42cc17b04f7459c86e2036d.jpg"
+            />
+            <div class="absolute bottom-6 left-6 bg-background/95 backdrop-blur-md p-6 max-w-sm hidden sm:block">
+              <span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary block mb-1">
+                Inspirasi Ruang
+              </span>
+              <p class="font-body-sm text-body-sm text-on-surface font-light">
+                Inspirasi penataan ruang dengan pilihan furnitur dari Azka Meubel.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5 space-y-8 lg:pl-6">
+          <div class="space-y-4">
+            <span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary block">
+              Tentang Azka Meubel
+            </span>
+            <h2 class="font-display-lg text-headline-lg-mobile md:text-headline-lg text-on-surface leading-tight">
+              Pilihan Furnitur untuk Kebutuhan Anda.
+            </h2>
+          </div>
+
+          <div class="space-y-4 font-body-md text-body-md text-on-surface-variant font-light leading-relaxed">
+            <p>
+              Azka Meubel menyediakan pilihan furnitur untuk kebutuhan rumah Anda. Jelajahi katalog untuk melihat produk yang tersedia dan temukan furnitur yang sesuai dengan kebutuhan ruang Anda.
+            </p>
+            <p>
+              Informasi bahan, ukuran, dan spesifikasi mengikuti detail masing-masing produk. Jika informasi yang Anda butuhkan belum tersedia, hubungi kami melalui WhatsApp.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 py-4">
+            <div class="bg-surface-container p-5">
+              <span class="font-headline-sm text-headline-sm text-on-surface block mb-1">DETAIL PRODUK</span>
+              <span class="font-body-sm text-body-sm text-on-surface-variant">
+                Lihat informasi bahan dan ukuran pada setiap produk apabila tersedia.
+              </span>
+            </div>
+            <div class="bg-surface-container p-5">
+              <span class="font-headline-sm text-headline-sm text-on-surface block mb-1">TANYA LANGSUNG</span>
+              <span class="font-body-sm text-body-sm text-on-surface-variant">
+                Hubungi Azka Meubel untuk menanyakan harga dan ketersediaan produk.
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <a
+              class="inline-flex items-center gap-3 font-label-md text-label-md uppercase tracking-[0.16em] text-primary hover:text-secondary transition-colors"
+              href="/about"
+            >
+              <span>Tentang Kami</span>
+              <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED PRODUCTS SECTION -->
+  <section class="w-full py-28 bg-background" id="featured-products">
+    <div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12">
+        <div>
+          <span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary block mb-2">
+            Katalog Produk
+          </span>
+          <h2 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-on-surface">
+            Produk Unggulan
+          </h2>
+        </div>
+      </div>
+
+      {featuredProducts.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+          {featuredProducts.map(product => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-16 bg-surface-container-low p-12">
+          <h3 class="font-headline-sm text-headline-sm text-on-surface mb-4">
+            Produk Sedang Disiapkan
+          </h3>
+          <p class="font-body-md text-body-md text-on-surface-variant">
+            Hubungi Azka Meubel melalui WhatsApp untuk menanyakan pilihan produk yang tersedia.
+          </p>
+        </div>
+      )}
+
+      {featuredProducts.length > 0 && (
+        <div class="flex justify-center mt-16">
+          <a
+            class="inline-flex items-center gap-3 bg-primary text-on-primary px-8 py-4 font-label-md text-label-md uppercase tracking-[0.16em] hover:bg-secondary transition-colors duration-200"
+            href="/products"
+          >
+            <span>Lihat Semua Produk</span>
+            <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- CTA SECTION -->
+  <section class="w-full py-20 bg-surface-container">
+    <div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin text-center">
+      <div class="max-w-3xl mx-auto space-y-6">
+        <h2 class="font-display-lg text-headline-lg-mobile md:text-display-lg text-on-surface">
+          Temukan Furnitur yang Tepat untuk Ruang Anda
+        </h2>
+        <p class="font-body-lg text-body-lg text-on-surface-variant">
+          Hubungi Azka Meubel melalui WhatsApp untuk menanyakan produk, harga, dan ketersediaannya.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <a
+            class="inline-flex items-center justify-center bg-primary text-on-primary px-8 py-4 font-label-md text-label-md uppercase tracking-[0.16em] hover:bg-secondary transition-colors duration-200"
+            href="/products"
+          >
+            Lihat Produk
+          </a>
+          {whatsappNumber && (
+            <a
+              class="inline-flex items-center justify-center gap-3 border border-primary px-8 py-4 font-label-md text-label-md uppercase tracking-[0.16em] text-primary hover:bg-surface-container-low transition-colors duration-200"
+              href={`https://wa.me/${whatsappNumber}`}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <span class="material-symbols-outlined text-[18px]">chat</span>
+              <span>Chat WhatsApp</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

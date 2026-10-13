@@ -1,0 +1,62 @@
+---
+import type { Product } from '../types';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const categoryName = product.category?.name || 'Produk';
+---
+
+<article class="group h-full">
+  <a
+    href={`/products/${product.slug}`}
+    class="flex flex-col h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-all"
+    aria-label={`Lihat detail ${product.name}`}
+  >
+    <div class="relative w-full aspect-[4/5] bg-surface-container overflow-hidden mb-3 md:mb-5">
+      <img
+        src={product.main_image}
+        alt={product.name}
+        class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        loading="lazy"
+      />
+      <div class="absolute top-2 left-2 md:top-4 md:left-4 bg-background/90 backdrop-blur-sm px-2 py-0.5 md:px-3 md:py-1 font-label-sm text-[10px] md:text-xs uppercase tracking-wider text-on-surface">
+        {categoryName}
+      </div>
+    </div>
+    
+    <div class="flex flex-col gap-2 flex-grow">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between md:gap-4">
+        <div class="flex-1 min-w-0">
+          <h2 class="font-headline-sm text-sm md:text-base text-on-surface group-hover:text-secondary transition-colors leading-snug">
+            {product.name}
+          </h2>
+          {product.short_description && (
+            <p class="font-body-sm text-xs md:text-sm text-on-surface-variant mt-1 line-clamp-2">
+              {product.short_description}
+            </p>
+          )}
+        </div>
+        {product.show_price && product.price && (
+          <div class="mt-2 md:mt-0 md:text-right md:flex-shrink-0">
+            <span class="font-headline-sm text-sm md:text-base text-on-surface whitespace-nowrap">
+              Rp {product.price.toLocaleString('id-ID')}
+            </span>
+          </div>
+        )}
+      </div>
+      
+      <div class="mt-auto pt-2 md:pt-3 border-t border-surface-container-highest flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <span class="font-label-sm text-[10px] md:text-xs text-on-surface-variant uppercase tracking-wide">
+          {product.product_code}
+        </span>
+        <span class="font-label-md text-xs md:text-sm uppercase tracking-wide text-primary flex items-center gap-1 group-hover:gap-2 transition-all self-start md:self-auto">
+          <span>Lihat Detail</span>
+          <span class="material-symbols-outlined text-[12px] md:text-[14px]">arrow_forward</span>
+        </span>
+      </div>
+    </div>
+  </a>
+</article>

@@ -1,0 +1,220 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { getProductBySlug, getRelatedProducts } from '../../lib/products';
+import { createProductWhatsAppUrl } from '../../lib/whatsapp';
+
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/products');
+}
+
+const product = await getProductBySlug(slug);
+
+if (!product) {
+  return Astro.redirect('/products');
+}
+
+const relatedProducts = await getRelatedProducts(product.category_id, product.id, 3);
+const whatsappUrl = createProductWhatsAppUrl(product.name, product.product_code);
+
+const gallery = product.gallery || [];
+const allImages = [product.main_image, ...gallery];
+---
+
+<BaseLayout
+  title={`${product.name} | AZKA MEUBEL`}
+  description={product.short_description || product.description || `Detail produk ${product.name} dari AZKA MEUBEL`}
+>
+  <!-- Breadcrumbs -->
+  <section class="container px-4 sm:px-8 lg:px-12 pt-8 pb-4">
+    <nav class="flex items-center gap-2 font-label-md text-on-surface-variant uppercase tracking-wider">
+      <a href="/" class="hover:text-primary transition-colors">Beranda</a>
+      <span class="text-outline-variant">/</span>
+      <a href="/products" class="hover:text-primary transition-colors">Produk</a>
+      <span class="text-outline-variant">/</span>
+      <span class="text-on-surface font-semibold">{product.name}</span>
+    </nav>
+  </section>
+
+  <!-- Product Detail -->
+  <section class="container px-4 sm:px-8 lg:px-12 py-8 md:py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6 lg:gap-12 items-start">
+      <!-- Gallery -->
+      <div class="flex flex-col gap-6">
+        <div class="relative w-full aspect-[4/4.8] sm:aspect-[4/4.5] bg-surface-container-low overflow-hidden group">
+          <img
+            src={product.main_image}
+            alt={product.name}
+            class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+            id="mainImage"
+          />
+          <div class="absolute top-5 left-5 bg-background/90 backdrop-blur-sm px-3.5 py-1.5 shadow-sm">
+            <span class="font-label-sm uppercase tracking-widest text-on-surface">
+              Produk Arsitektural
+            </span>
+          </div>
+        </div>
+
+        {allImages.length > 1 && (
+          <div class="grid grid-cols-3 gap-3 sm:gap-4">
+            {allImages.slice(0, 3).map((img, index) => (
+              <button
+                class="gallery-thumb aspect-square bg-surface-container overflow-hidden hover:ring-2 hover:ring-primary transition-all"
+                data-image={img}
+              >
+                <img
+                  src={img}
+                  alt={`${product.name} view ${index + 1}`}
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <!-- Material Info -->
+        <div class="bg-surface-container-low p-6 sm:p-7">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-surface-container-highest">
+            <span class="font-label-sm uppercase tracking-widest text-secondary">
+              Integritas & Asal Material
+            </span>
+            <span class="font-label-sm uppercase text-on-surface-variant">
+              Atelier Jepara
+            </span>
+          </div>
+          <p class="font-body-md text-on-surface-variant leading-relaxed">
+            {product.description || 'Setiap produk dibuat dengan keahlian tangan menggunakan material pilihan terbaik untuk daya tahan dan keindahan jangka panjang.'}
+          </p>
+        </div>
+      </div>
+
+      <!-- Product Info -->
+      <div class="flex flex-col space-y-6">
+        <div class="space-y-3 pb-5 border-b border-surface-container-highest">
+          <div class="flex items-center justify-between gap-4">
+            <span class="font-label-md uppercase tracking-widest text-secondary">
+              {product.category?.name || 'Produk'}
+            </span>
+            <span class="font-label-sm text-outline tracking-wider font-mono">
+              ID: {product.product_code}
+            </span>
+          </div>
+          <h1 class="font-display-lg text-on-surface leading-[1.1] tracking-tight pt-1">
+            {product.name}
+          </h1>
+          {product.show_price && product.price && (
+            <div class="flex items-baseline gap-3 pt-3">
+              <span class="font-headline-lg text-on-surface font-light">
+                Rp {product.price.toLocaleString('id-ID')}
+              </span>
+              <span class="font-label-sm text-on-surface-variant uppercase tracking-wider">
+                per unit
+              </span>
+            </div>
+          )}
+        </div>
+
+        {product.short_description && (
+          <div>
+            <p class="font-body-lg text-on-surface-variant leading-relaxed">
+              {product.short_description}
+            </p>
+          </div>
+        )}
+
+        <!-- Specifications -->
+        {(product.material || product.finish || product.dimensions) && (
+          <div class="bg-surface-container-low p-5 space-y-0">
+            {product.material && (
+              <div class="flex items-center justify-between text-on-surface py-3">
+                <span class="font-label-md uppercase tracking-wider">Material</span>
+                <span class="font-body-sm font-medium text-right">{product.material}</span>
+              </div>
+            )}
+            {product.finish && (
+              <div class="flex items-center justify-between text-on-surface py-3 border-t border-surface-container-highest">
+                <span class="font-label-md uppercase tracking-wider">Finishing</span>
+                <span class="font-body-sm font-medium text-right">{product.finish}</span>
+              </div>
+            )}
+            {product.dimensions && (
+              <div class="flex items-center justify-between text-on-surface py-3 border-t border-surface-container-highest">
+                <span class="font-label-md uppercase tracking-wider">Dimensi</span>
+                <span class="font-body-sm font-medium text-right">{product.dimensions}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <!-- WhatsApp CTA -->
+        <div class="p-6 bg-surface-container-high space-y-4">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-secondary">forum</span>
+              <span class="font-label-sm uppercase tracking-widest text-on-surface font-semibold">
+                Konsultasi Langsung
+              </span>
+            </div>
+            <span class="font-label-sm text-on-surface-variant">
+              Respon Cepat
+            </span>
+          </div>
+
+          <div class="bg-background p-4 border-l-2 border-primary">
+            <p class="font-body-sm text-on-surface-variant leading-relaxed">
+              Tertarik dengan {product.name}? Hubungi kami untuk informasi ketersediaan, custom, dan waktu pengerjaan.
+            </p>
+          </div>
+
+          <a
+            href={whatsappUrl}
+            class="w-full flex items-center justify-center gap-3 bg-primary text-on-primary py-4 px-6 font-label-md uppercase tracking-widest hover:bg-secondary transition-colors group shadow-sm"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="material-symbols-outlined text-[19px] group-hover:scale-110 transition-transform">
+              chat
+            </span>
+            <span>Chat via WhatsApp</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Related Products -->
+  {relatedProducts.length > 0 && (
+    <section class="w-full py-20 bg-surface-container-low">
+      <div class="container">
+        <div class="mb-12">
+          <h2 class="font-headline-lg text-on-surface mb-2">Produk Pelengkap</h2>
+          <p class="font-body-md text-on-surface-variant">
+            Produk lain dari kategori yang sama
+          </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+          {relatedProducts.map(relProduct => (
+            <ProductCard product={relProduct} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<script>
+  const thumbs = document.querySelectorAll('.gallery-thumb');
+  const mainImage = document.getElementById('mainImage') as HTMLImageElement;
+
+  thumbs.forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      const imageSrc = thumb.getAttribute('data-image');
+      if (imageSrc && mainImage) {
+        mainImage.src = imageSrc;
+      }
+    });
+  });
+</script>

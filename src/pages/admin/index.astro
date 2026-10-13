@@ -1,0 +1,187 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import '../../styles/global.css';
+
+// Note: SSR auth check won't work with localStorage-based sessions
+// We handle redirect on client-side below
+
+const { supabase } = await import('../../lib/supabase');
+const { data: products } = await supabase.from('products').select('*');
+
+const totalProducts = products?.length || 0;
+const publishedCount = products?.filter(p => p.status === 'published').length || 0;
+const draftCount = products?.filter(p => p.status === 'draft').length || 0;
+---
+
+<AdminLayout title="Dashboard Admin | AZKA MEUBEL">
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script is:inline define:vars={{ supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, supabaseKey: import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}>
+      (async () => {
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+        
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (!session) {
+          console.log('No session found, redirecting to login');
+          window.location.href = '/admin/login';
+          return;
+        }
+
+        console.log('Session found, user ID:', session.user.id);
+
+        // Check admin role with maybeSingle()
+        const { data: profile, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        console.log('Profile check result:', { profile, profileError });
+
+        if (profileError) {
+          console.error('Profile query error:', profileError);
+          await supabaseClient.auth.signOut();
+          window.location.href = '/admin/login';
+          return;
+        }
+
+        if (!profile || profile.role !== 'admin') {
+          console.warn('Not admin or profile not found');
+          await supabaseClient.auth.signOut();
+          window.location.href = '/admin/login';
+        } else {
+          console.log('Admin verified, dashboard loading');
+        }
+      })();
+    </script>
+
+    <div class="space-y-8">
+      <div>
+        <h1 class="font-headline-lg text-on-surface mb-2">Dashboard</h1>
+        <p class="font-body-md text-on-surface-variant">
+          Selamat datang di panel admin AZKA MEUBEL
+        </p>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-background p-6 border border-surface-container-highest">
+          <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-[32px] text-secondary">inventory_2</span>
+            <span class="font-display-lg text-on-surface">{totalProducts}</span>
+          </div>
+          <h3 class="font-label-md uppercase text-on-surface-variant">Total Produk</h3>
+        </div>
+
+        <div class="bg-background p-6 border border-surface-container-highest">
+          <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-[32px] text-secondary">check_circle</span>
+            <span class="font-display-lg text-on-surface">{publishedCount}</span>
+          </div>
+          <h3 class="font-label-md uppercase text-on-surface-variant">Published</h3>
+        </div>
+
+        <div class="bg-background p-6 border border-surface-container-highest">
+          <div class="flex items-center justify-between mb-4">
+            <span class="material-symbols-outlined text-[32px] text-secondary">draft</span>
+            <span class="font-display-lg text-on-surface">{draftCount}</span>
+          </div>
+          <h3 class="font-label-md uppercase text-on-surface-variant">Draft</h3>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="space-y-4">
+        <h2 class="font-headline-sm text-on-surface">Aksi Cepat</h2>
+        <div class="flex flex-wrap gap-4">
+          <a
+            href="/admin/products/new"
+            class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 font-label-md uppercase hover:bg-secondary transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            <span>Tambah Produk</span>
+          </a>
+          <a
+            href="/admin/products"
+            class="inline-flex items-center gap-2 border border-primary px-6 py-3 font-label-md uppercase text-primary hover:bg-surface-container transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px]">list</span>
+            <span>Kelola Produk</span>
+          </a>
+          <a
+            href="/"
+            class="inline-flex items-center gap-2 border border-outline px-6 py-3 font-label-md uppercase text-on-surface hover:bg-surface-container transition-colors"
+            target="_blank"
+          >
+            <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+            <span>Lihat Website</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Recent Products -->
+      {products && products.length > 0 && (
+        <div class="space-y-4">
+          <h2 class="font-headline-sm text-on-surface">Produk Terbaru</h2>
+          <div class="bg-background border border-surface-container-highest overflow-hidden">
+            <table class="w-full">
+              <thead class="bg-surface-container-low">
+                <tr>
+                  <th class="text-left px-6 py-3 font-label-sm uppercase text-on-surface-variant">
+                    Produk
+                  </th>
+                  <th class="text-left px-6 py-3 font-label-sm uppercase text-on-surface-variant">
+                    ID
+                  </th>
+                  <th class="text-left px-6 py-3 font-label-sm uppercase text-on-surface-variant">
+                    Status
+                  </th>
+                  <th class="text-right px-6 py-3 font-label-sm uppercase text-on-surface-variant">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.slice(0, 5).map((product: any) => (
+                  <tr class="border-t border-surface-container-highest">
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-3">
+                        <img
+                          src={product.main_image}
+                          alt={product.name}
+                          class="w-12 h-12 object-cover bg-surface-container"
+                        />
+                        <span class="font-body-md text-on-surface">{product.name}</span>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 font-body-sm text-on-surface-variant">
+                      {product.product_code}
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class={`inline-block px-3 py-1 font-label-sm uppercase ${
+                        product.status === 'published'
+                          ? 'bg-secondary text-on-secondary'
+                          : 'bg-surface-container text-on-surface-variant'
+                      }`}>
+                        {product.status === 'published' ? 'Published' : 'Draft'}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                      <a
+                        href={`/admin/products/${product.id}/edit`}
+                        class="inline-flex items-center gap-1 font-label-sm uppercase text-primary hover:text-secondary transition-colors"
+                      >
+                        <span>Edit</span>
+                        <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  </AdminLayout>

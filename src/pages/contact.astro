@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Hubungi Kami | AZKA MEUBEL"
+  description="Hubungi AZKA MEUBEL untuk konsultasi furnitur, pemesanan custom, atau pertanyaan lainnya."
+>
+  <div class="flex flex-col w-full container px-4 sm:px-8 lg:px-12 py-12 md:py-16">
+    <div class="max-w-2xl mb-10 space-y-3">
+      <div class="flex items-center gap-3">
+        <span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+        <span class="font-label-md uppercase tracking-widest text-secondary">
+          HUBUNGI KAMI
+        </span>
+      </div>
+      <h1 class="font-display-xl text-on-surface tracking-tight leading-[1.05]">
+        Hubungi Azka Meubel
+      </h1>
+      <p class="font-body-lg text-on-surface-variant pt-1">
+        Ada pertanyaan tentang produk atau kebutuhan furnitur Anda? Hubungi kami untuk mendapatkan informasi lebih lanjut melalui WhatsApp.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-8 lg:gap-12 items-start">
+      <!-- Contact Form -->
+      <div class="bg-surface-container-lowest p-6 sm:p-8 border border-surface-container-highest shadow-sm">
+        <div class="mb-7 space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="font-label-sm uppercase tracking-widest text-secondary">
+              FORMULIR KONTAK
+            </span>
+            <span class="w-8 h-px bg-surface-container-highest"></span>
+          </div>
+          <h2 class="font-headline-md text-on-surface">Kirim Pesan kepada Kami</h2>
+          <p class="font-body-md text-on-surface-variant">
+            Lengkapi informasi berikut agar kami dapat memahami pertanyaan atau kebutuhan Anda. Setelah itu, lanjutkan percakapan melalui WhatsApp.
+          </p>
+        </div>
+
+        <form id="contact-form" class="space-y-5">
+          <div class="space-y-2">
+            <label
+              for="nama"
+              class="font-label-sm uppercase tracking-wider text-on-surface block"
+            >
+              Nama Lengkap <span class="text-secondary">*</span>
+            </label>
+            <input
+              type="text"
+              id="nama"
+              name="nama"
+              required
+              placeholder="Masukkan nama lengkap Anda"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label
+              for="whatsapp"
+              class="font-label-sm uppercase tracking-wider text-on-surface block"
+            >
+              Nomor WhatsApp <span class="text-secondary">*</span>
+            </label>
+            <input
+              type="tel"
+              id="whatsapp"
+              name="whatsapp"
+              required
+              placeholder="Masukkan nomor WhatsApp aktif"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label
+              for="pesan"
+              class="font-label-sm uppercase tracking-wider text-on-surface block"
+            >
+              Pesan atau Pertanyaan <span class="text-secondary">*</span>
+            </label>
+            <textarea
+              id="pesan"
+              name="pesan"
+              required
+              rows="5"
+              placeholder="Tuliskan produk atau hal yang ingin Anda tanyakan"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface placeholder:text-outline focus:outline-none focus:bg-background transition-colors resize-none border border-transparent focus:border-primary"
+            ></textarea>
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="submit"
+              class="w-full bg-primary text-on-primary font-label-md uppercase tracking-widest py-4 px-8 hover:bg-secondary transition-colors duration-200 flex items-center justify-center gap-3 cursor-pointer shadow-sm"
+            >
+              <span class="material-symbols-outlined text-[20px]">chat</span>
+              <span>Lanjutkan ke WhatsApp</span>
+            </button>
+            <span class="font-body-sm text-on-surface-variant block text-center mt-3">
+              Pesan akan disiapkan di WhatsApp untuk Anda periksa dan kirim.
+            </span>
+          </div>
+        </form>
+      </div>
+
+      <!-- Location Info -->
+      <div class="space-y-6">
+        <div class="space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="font-label-sm uppercase tracking-widest text-secondary">
+              LOKASI AZKA MEUBEL
+            </span>
+            <span class="w-8 h-px bg-surface-container-highest"></span>
+          </div>
+          <h3 class="font-headline-md text-on-surface">Temukan Lokasi Kami</h3>
+          <p class="font-body-md text-on-surface-variant">
+            Lihat lokasi Azka Meubel melalui peta di bawah ini atau buka Google Maps untuk mendapatkan petunjuk arah.
+          </p>
+        </div>
+
+        <div class="bg-surface-container-lowest border border-surface-container-highest overflow-hidden">
+          <iframe
+            src="https://www.google.com/maps?q=-7.9264926,111.9425371&z=15&output=embed"
+            width="100%"
+            height="340"
+            style="border:0;"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Peta lokasi Azka Meubel"
+            class="w-full"
+          ></iframe>
+        </div>
+
+        <div class="pt-2">
+          <a
+            href="https://maps.app.goo.gl/FZyB3P8ZgYW6JDoM7"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 font-label-md uppercase tracking-wider text-primary hover:text-secondary transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px]">location_on</span>
+            <span>Buka di Google Maps</span>
+            <span class="material-symbols-outlined text-[16px]">north_east</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { createContactWhatsAppUrl } from '../lib/whatsapp';
+
+  const form = document.getElementById('contact-form') as HTMLFormElement;
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(form);
+    const nama = formData.get('nama') as string;
+    const whatsapp = formData.get('whatsapp') as string;
+    const pesan = formData.get('pesan') as string;
+
+    if (!nama || !whatsapp || !pesan) {
+      alert('Mohon lengkapi semua field yang wajib diisi.');
+      return;
+    }
+
+    const waUrl = createContactWhatsAppUrl(nama, whatsapp, pesan);
+    window.open(waUrl, '_blank');
+  });
+</script>

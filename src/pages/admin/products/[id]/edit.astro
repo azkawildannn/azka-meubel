@@ -1,0 +1,715 @@
+---
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+
+// Note: SSR auth check won't work with localStorage
+// We use client-side check below
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/admin/products');
+}
+
+// Get product
+const { supabase } = await import('../../../../lib/supabase');
+const { data: product, error } = await supabase
+  .from('products')
+  .select(`
+    *,
+    category:categories(*)
+  `)
+  .eq('id', id)
+  .single();
+
+if (error || !product) {
+  return Astro.redirect('/admin/products');
+}
+
+// Get categories
+const { data: categories } = await supabase
+  .from('categories')
+  .select('*')
+  .eq('is_active', true)
+  .order('name');
+---
+
+<AdminLayout title={`Edit ${product.name} | Admin AZKA MEUBEL`}>
+  <!-- Auth check script -->
+  <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script is:inline define:vars={{ supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, supabaseKey: import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}>
+    (async () => {
+      const { createClient } = supabase;
+      const supabaseClient = createClient(supabaseUrl, supabaseKey);
+      
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      if (!session) {
+        window.location.href = '/admin/login';
+        return;
+      }
+
+      // Check admin role
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (profileError || !profile || profile.role !== 'admin') {
+        await supabaseClient.auth.signOut();
+        window.location.href = '/admin/login';
+      }
+    })();
+  </script>
+
+  <div class="max-w-4xl">
+    <div class="mb-8">
+      <a
+        href="/admin/products"
+        class="inline-flex items-center gap-2 font-label-sm uppercase text-on-surface-variant hover:text-primary transition-colors mb-4"
+      >
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        <span>Kembali ke List Produk</span>
+      </a>
+      <h1 class="font-headline-lg text-on-surface mb-2">Edit Produk</h1>
+      <p class="font-body-md text-on-surface-variant">
+        Perbarui informasi produk {product.name}
+      </p>
+    </div>
+
+    <div class="bg-background border border-surface-container-highest p-8">
+      <form id="product-form" class="space-y-8">
+        <input type="hidden" name="id" value={product.id} />
+
+        <!-- Basic Info -->
+        <div class="space-y-6">
+          <h2 class="font-headline-sm text-on-surface pb-2 border-b border-surface-container-highest">
+            Informasi Dasar
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="name" class="font-label-sm uppercase text-on-surface block">
+                Nama Produk <span style="color: #ba1a1a">*</span>
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                value={product.name}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="product_code" class="font-label-sm uppercase text-on-surface block">
+                ID Produk <span style="color: #ba1a1a">*</span>
+              </label>
+              <input
+                type="text"
+                id="product_code"
+                name="product_code"
+                required
+                value={product.product_code}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="slug" class="font-label-sm uppercase text-on-surface block">
+                URL Slug <span style="color: #ba1a1a">*</span>
+              </label>
+              <input
+                type="text"
+                id="slug"
+                name="slug"
+                required
+                value={product.slug}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="category_id" class="font-label-sm uppercase text-on-surface block">
+                Kategori <span style="color: #ba1a1a">*</span>
+              </label>
+              <select
+                id="category_id"
+                name="category_id"
+                required
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              >
+                {categories?.map((cat) => (
+                  <option value={cat.id} selected={cat.id === product.category_id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Descriptions -->
+        <div class="space-y-6">
+          <h2 class="font-headline-sm text-on-surface pb-2 border-b border-surface-container-highest">
+            Deskripsi
+          </h2>
+
+          <div class="space-y-2">
+            <label for="short_description" class="font-label-sm uppercase text-on-surface block">
+              Deskripsi Singkat
+            </label>
+            <textarea
+              id="short_description"
+              name="short_description"
+              rows="2"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary resize-none"
+            >{product.short_description || ''}</textarea>
+          </div>
+
+          <div class="space-y-2">
+            <label for="description" class="font-label-sm uppercase text-on-surface block">
+              Deskripsi Lengkap
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows="6"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary resize-none"
+            >{product.description || ''}</textarea>
+          </div>
+        </div>
+
+        <!-- Price & Specs -->
+        <div class="space-y-6">
+          <h2 class="font-headline-sm text-on-surface pb-2 border-b border-surface-container-highest">
+            Harga & Spesifikasi
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="price" class="font-label-sm uppercase text-on-surface block">
+                Harga (Rp)
+              </label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                min="0"
+                step="1000"
+                value={product.price || ''}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label class="font-label-sm uppercase text-on-surface block">
+                Tampilkan Harga?
+              </label>
+              <div class="flex items-center gap-4 pt-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="show_price"
+                    value="true"
+                    checked={product.show_price}
+                    class="w-4 h-4"
+                  />
+                  <span class="font-body-md text-on-surface">Ya</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="show_price"
+                    value="false"
+                    checked={!product.show_price}
+                    class="w-4 h-4"
+                  />
+                  <span class="font-body-md text-on-surface">Tidak</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label for="material" class="font-label-sm uppercase text-on-surface block">
+                Material
+              </label>
+              <input
+                type="text"
+                id="material"
+                name="material"
+                value={product.material || ''}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <label for="finish" class="font-label-sm uppercase text-on-surface block">
+                Finishing / Warna
+              </label>
+              <input
+                type="text"
+                id="finish"
+                name="finish"
+                value={product.finish || ''}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+
+            <div class="space-y-2 md:col-span-2">
+              <label for="dimensions" class="font-label-sm uppercase text-on-surface block">
+                Dimensi
+              </label>
+              <input
+                type="text"
+                id="dimensions"
+                name="dimensions"
+                value={product.dimensions || ''}
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Images -->
+        <div class="space-y-6">
+          <h2 class="font-headline-sm text-on-surface pb-2 border-b border-surface-container-highest">
+            Gambar Produk
+          </h2>
+
+          <!-- Current Main Image -->
+          <div class="space-y-2">
+            <label class="font-label-sm uppercase text-on-surface block">
+              Gambar Utama Saat Ini
+            </label>
+            <img
+              src={product.main_image}
+              alt={product.name}
+              class="w-48 h-48 object-cover bg-surface-container border border-surface-container-highest"
+              loading="lazy"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label for="main_image_file" class="font-label-sm uppercase text-on-surface block">
+              Upload Gambar Utama Baru
+            </label>
+            <input
+              type="file"
+              id="main_image_file"
+              name="main_image_file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary file:mr-4 file:py-2 file:px-4 file:border-0 file:font-label-sm file:uppercase file:bg-primary file:text-on-primary file:cursor-pointer hover:file:bg-secondary"
+            />
+            <p class="font-body-sm text-on-surface-variant">
+              Kosongkan jika tidak ingin mengganti. Format: JPG, PNG, WebP. Maksimal 5MB.
+            </p>
+            <div id="main-image-preview" class="hidden mt-4">
+              <img src="" alt="Preview" class="w-48 h-48 object-cover border border-surface-container-highest" />
+            </div>
+          </div>
+
+          <div class="border-t border-surface-container-highest pt-6">
+            <p class="font-label-sm uppercase text-on-surface-variant mb-2">Atau gunakan URL baru</p>
+            <input
+              type="url"
+              id="main_image_url"
+              name="main_image_url"
+              class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary"
+              placeholder="https://images.unsplash.com/..."
+            />
+          </div>
+
+          <input type="hidden" id="main_image" name="main_image" value={product.main_image} />
+
+          <!-- Gallery Images -->
+          <div class="border-t border-surface-container-highest pt-6 space-y-4">
+            <!-- Existing Gallery -->
+            {product.gallery && product.gallery.length > 0 && (
+              <div class="space-y-2">
+                <label class="font-label-sm uppercase text-on-surface block">
+                  Gambar Tambahan Saat Ini
+                </label>
+                <div id="existing-gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {product.gallery.map((url: string, index: number) => (
+                    <div class="relative group" data-url={url}>
+                      <img
+                        src={url}
+                        alt={`Gallery ${index + 1}`}
+                        class="w-full h-32 object-cover border border-surface-container-highest"
+                        loading="lazy"
+                      />
+                      <button
+                        type="button"
+                        class="absolute top-2 right-2 bg-error text-on-primary w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onclick={`removeExistingGalleryImage('${url}')`}
+                      >
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <!-- Add New Gallery Images -->
+            <div class="space-y-2">
+              <label for="gallery_files" class="font-label-sm uppercase text-on-surface block">
+                Tambah Gambar Baru (Opsional)
+              </label>
+              <input
+                type="file"
+                id="gallery_files"
+                name="gallery_files"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                multiple
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface focus:outline-none focus:bg-background transition-colors border border-transparent focus:border-primary file:mr-4 file:py-2 file:px-4 file:border-0 file:font-label-sm file:uppercase file:bg-primary file:text-on-primary file:cursor-pointer hover:file:bg-secondary"
+              />
+              <p class="font-body-sm text-on-surface-variant">
+                Pilih beberapa gambar sekaligus. Format JPG, PNG, atau WebP, maksimal 5 MB per gambar.
+              </p>
+            </div>
+
+            <!-- New Gallery Preview -->
+            <div id="gallery-preview" class="hidden">
+              <p class="font-label-sm uppercase text-on-surface mb-2">Preview Gambar Baru:</p>
+              <div id="gallery-preview-container" class="grid grid-cols-2 md:grid-cols-4 gap-4"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="space-y-6">
+          <h2 class="font-headline-sm text-on-surface pb-2 border-b border-surface-container-highest">
+            Status Publikasi
+          </h2>
+
+          <div class="space-y-2">
+            <label class="font-label-sm uppercase text-on-surface block">
+              Status <span style="color: #ba1a1a">*</span>
+            </label>
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  value="draft"
+                  checked={product.status === 'draft'}
+                  class="w-4 h-4"
+                />
+                <span class="font-body-md text-on-surface">Draft</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="status"
+                  value="published"
+                  checked={product.status === 'published'}
+                  class="w-4 h-4"
+                />
+                <span class="font-body-md text-on-surface">Published</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-4 pt-6 border-t border-surface-container-highest">
+          <button
+            type="submit"
+            class="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-3 font-label-md uppercase hover:bg-secondary transition-colors"
+          >
+            <span class="material-symbols-outlined text-[18px]">save</span>
+            <span>Simpan Perubahan</span>
+          </button>
+          <a
+            href="/admin/products"
+            class="inline-flex items-center gap-2 border border-outline px-8 py-3 font-label-md uppercase text-on-surface hover:bg-surface-container transition-colors"
+          >
+            Batal
+          </a>
+        </div>
+
+        <div id="form-message" class="hidden">
+          <p class="px-4 py-3 font-body-md"></p>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    import { updateProduct } from '../../../../lib/products';
+    import { uploadProductImage, validateImageFile } from '../../../../lib/storage';
+
+    const form = document.getElementById('product-form') as HTMLFormElement;
+    const messageDiv = document.getElementById('form-message');
+    const nameInput = document.getElementById('name') as HTMLInputElement;
+    const slugInput = document.getElementById('slug') as HTMLInputElement;
+    const productCodeInput = document.getElementById('product_code') as HTMLInputElement;
+    const mainImageFileInput = document.getElementById('main_image_file') as HTMLInputElement;
+    const mainImageUrlInput = document.getElementById('main_image_url') as HTMLInputElement;
+    const mainImageHidden = document.getElementById('main_image') as HTMLInputElement;
+    const mainImagePreview = document.getElementById('main-image-preview') as HTMLElement;
+    const galleryFilesInput = document.getElementById('gallery_files') as HTMLInputElement;
+    const galleryPreview = document.getElementById('gallery-preview') as HTMLElement;
+    const galleryPreviewContainer = document.getElementById('gallery-preview-container') as HTMLElement;
+    const existingGalleryContainer = document.getElementById('existing-gallery') as HTMLElement;
+
+    let selectedGalleryFiles: File[] = [];
+    let existingGalleryUrls: string[] = [];
+
+    // Initialize existing gallery URLs
+    if (existingGalleryContainer) {
+      const items = existingGalleryContainer.querySelectorAll('[data-url]');
+      items.forEach(item => {
+        const url = item.getAttribute('data-url');
+        if (url) existingGalleryUrls.push(url);
+      });
+    }
+
+    // Auto-generate slug from name
+    nameInput?.addEventListener('input', () => {
+      const slug = nameInput.value
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-');
+      if (slugInput) {
+        slugInput.value = slug;
+      }
+    });
+
+    // Preview main image
+    mainImageFileInput?.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+          alert(validation.error);
+          mainImageFileInput.value = '';
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = mainImagePreview?.querySelector('img');
+          if (img && e.target?.result) {
+            img.src = e.target.result as string;
+            mainImagePreview?.classList.remove('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Preview gallery images
+    galleryFilesInput?.addEventListener('change', (e) => {
+      const files = Array.from((e.target as HTMLInputElement).files || []);
+      
+      if (files.length === 0) return;
+
+      // Validate all files
+      const invalidFiles: string[] = [];
+      const validFiles: File[] = [];
+
+      files.forEach(file => {
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+          invalidFiles.push(`${file.name}: ${validation.error}`);
+        } else {
+          validFiles.push(file);
+        }
+      });
+
+      if (invalidFiles.length > 0) {
+        alert('Beberapa file tidak valid:\n' + invalidFiles.join('\n'));
+      }
+
+      if (validFiles.length === 0) {
+        galleryFilesInput.value = '';
+        return;
+      }
+
+      selectedGalleryFiles = validFiles;
+      renderGalleryPreviews();
+    });
+
+    function renderGalleryPreviews() {
+      if (!galleryPreviewContainer) return;
+
+      galleryPreviewContainer.innerHTML = '';
+
+      if (selectedGalleryFiles.length === 0) {
+        galleryPreview?.classList.add('hidden');
+        return;
+      }
+
+      galleryPreview?.classList.remove('hidden');
+
+      selectedGalleryFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const container = document.createElement('div');
+          container.className = 'relative group';
+          
+          const img = document.createElement('img');
+          img.src = e.target?.result as string;
+          img.alt = file.name;
+          img.className = 'w-full h-32 object-cover border border-surface-container-highest';
+          
+          const removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'absolute top-2 right-2 bg-error text-on-primary w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity';
+          removeBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">close</span>';
+          removeBtn.onclick = () => removeGalleryImage(index);
+          
+          const fileName = document.createElement('p');
+          fileName.className = 'font-body-sm text-on-surface-variant mt-1 truncate';
+          fileName.textContent = file.name;
+
+          container.appendChild(img);
+          container.appendChild(removeBtn);
+          container.appendChild(fileName);
+          galleryPreviewContainer.appendChild(container);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function removeGalleryImage(index: number) {
+      selectedGalleryFiles.splice(index, 1);
+      renderGalleryPreviews();
+      
+      // Reset file input
+      if (galleryFilesInput) {
+        galleryFilesInput.value = '';
+      }
+    }
+
+    // Remove existing gallery image
+    (window as any).removeExistingGalleryImage = function(url: string) {
+      const index = existingGalleryUrls.indexOf(url);
+      if (index > -1) {
+        existingGalleryUrls.splice(index, 1);
+      }
+
+      // Remove from DOM
+      if (existingGalleryContainer) {
+        const item = existingGalleryContainer.querySelector(`[data-url="${url}"]`);
+        if (item) {
+          item.remove();
+        }
+
+        // Hide container if empty
+        if (existingGalleryContainer.children.length === 0) {
+          existingGalleryContainer.parentElement?.classList.add('hidden');
+        }
+      }
+    };
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const id = formData.get('id') as string;
+      const mainImageFile = mainImageFileInput?.files?.[0];
+      const mainImageUrl = mainImageUrlInput?.value;
+      const productCode = productCodeInput?.value;
+      const currentMainImage = mainImageHidden?.value;
+
+      try {
+        if (messageDiv) {
+          messageDiv.classList.remove('hidden');
+          const p = messageDiv.querySelector('p');
+          if (p) {
+            p.textContent = 'Memproses...';
+            p.style.backgroundColor = '#d4c4b6';
+            p.style.color = '#1c1c18';
+          }
+        }
+
+        // Determine final main image URL
+        let finalMainImageUrl = currentMainImage;
+        
+        if (mainImageFile && productCode) {
+          if (messageDiv) {
+            const p = messageDiv.querySelector('p');
+            if (p) p.textContent = 'Mengunggah gambar utama...';
+          }
+          finalMainImageUrl = await uploadProductImage(mainImageFile, productCode);
+        } else if (mainImageUrl) {
+          finalMainImageUrl = mainImageUrl;
+        }
+
+        // Upload new gallery images
+        const newGalleryUrls: string[] = [];
+        if (selectedGalleryFiles.length > 0 && productCode) {
+          for (let i = 0; i < selectedGalleryFiles.length; i++) {
+            const file = selectedGalleryFiles[i];
+            if (messageDiv) {
+              const p = messageDiv.querySelector('p');
+              if (p) {
+                p.textContent = `Mengunggah gambar tambahan ${i + 1}/${selectedGalleryFiles.length}...`;
+              }
+            }
+            try {
+              const url = await uploadProductImage(file, productCode);
+              newGalleryUrls.push(url);
+            } catch (error) {
+              console.error(`Failed to upload gallery image ${i + 1}:`, error);
+              // Continue with other uploads
+            }
+          }
+        }
+
+        // Combine existing and new gallery URLs
+        const finalGalleryUrls = [...existingGalleryUrls, ...newGalleryUrls];
+
+        const productData = {
+          name: formData.get('name') as string,
+          product_code: productCode as string,
+          slug: formData.get('slug') as string,
+          category_id: formData.get('category_id') as string,
+          short_description: formData.get('short_description') as string || null,
+          description: formData.get('description') as string || null,
+          price: formData.get('price') ? parseFloat(formData.get('price') as string) : null,
+          show_price: formData.get('show_price') === 'true',
+          material: formData.get('material') as string || null,
+          finish: formData.get('finish') as string || null,
+          dimensions: formData.get('dimensions') as string || null,
+          main_image: finalMainImageUrl,
+          gallery: finalGalleryUrls.length > 0 ? finalGalleryUrls : null,
+          status: formData.get('status') as 'draft' | 'published',
+        };
+
+        await updateProduct(id, productData);
+        
+        if (messageDiv) {
+          messageDiv.classList.remove('hidden');
+          const p = messageDiv.querySelector('p');
+          if (p) {
+            p.textContent = 'Produk berhasil diperbarui!';
+            p.style.backgroundColor = '#d4c4b6';
+            p.style.color = '#1c1c18';
+          }
+        }
+
+        setTimeout(() => {
+          window.location.href = '/admin/products';
+        }, 1000);
+      } catch (error: any) {
+        if (messageDiv) {
+          messageDiv.classList.remove('hidden');
+          const p = messageDiv.querySelector('p');
+          if (p) {
+            p.textContent = error.message || 'Gagal memperbarui produk. Silakan coba lagi.';
+            p.style.backgroundColor = '#ffdad6';
+            p.style.color = '#ba1a1a';
+          }
+        }
+      }
+    });
+  </script>
+</AdminLayout>

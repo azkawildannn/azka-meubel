@@ -1,0 +1,79 @@
+---
+const whatsappNumber = import.meta.env.PUBLIC_WHATSAPP_NUMBER || '';
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="w-full bg-surface-container-low border-t border-surface-container-highest pt-16 pb-8">
+  <div class="max-w-[1440px] mx-auto px-margin-mobile md:px-margin">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-12 pb-16 border-b border-surface-container-highest">
+      <!-- Brand Column -->
+      <div class="md:col-span-4 flex flex-col justify-between pr-0 md:pr-8">
+        <div class="space-y-4">
+          <h3 class="font-headline-md tracking-tight uppercase text-on-surface">AZKA MEUBEL</h3>
+          <p class="font-body-md text-on-surface-variant max-w-sm">
+            Azka Meubel menyediakan pilihan furnitur untuk kebutuhan rumah Anda. Hubungi kami untuk menanyakan detail dan ketersediaan produk.
+          </p>
+        </div>
+        <div class="mt-8">
+          <a 
+            href="https://maps.app.goo.gl/FZyB3P8ZgYW6JDoM7"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 font-label-sm uppercase text-primary hover:text-secondary transition-colors"
+          >
+            <span class="material-symbols-outlined text-[16px]">location_on</span>
+            <span>Lihat Lokasi di Google Maps</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="md:col-span-2 mt-8 md:mt-0">
+        <h4 class="font-label-md uppercase text-on-surface mb-6 tracking-widest">Navigasi</h4>
+        <ul class="space-y-3 font-body-sm text-on-surface-variant">
+          <li><a href="/" class="hover:text-primary transition-colors">Beranda</a></li>
+          <li><a href="/about" class="hover:text-primary transition-colors">Tentang Kami</a></li>
+          <li><a href="/products" class="hover:text-primary transition-colors">Produk</a></li>
+          <li><a href="/contact" class="hover:text-primary transition-colors">Kontak</a></li>
+        </ul>
+      </div>
+
+      <!-- Categories -->
+      <div class="md:col-span-2 mt-8 md:mt-0">
+        <h4 class="font-label-md uppercase text-on-surface mb-6 tracking-widest">Kategori</h4>
+        <ul class="space-y-3 font-body-sm text-on-surface-variant">
+          <li><a href="/products?category=kursi" class="hover:text-primary transition-colors">Kursi</a></li>
+          <li><a href="/products?category=sofa" class="hover:text-primary transition-colors">Sofa</a></li>
+          <li><a href="/products?category=meja" class="hover:text-primary transition-colors">Meja</a></li>
+          <li><a href="/products?category=kamar-tidur" class="hover:text-primary transition-colors">Kamar Tidur</a></li>
+        </ul>
+      </div>
+
+      <!-- Contact -->
+      <div class="md:col-span-4 mt-8 md:mt-0">
+        <h4 class="font-label-md uppercase text-on-surface mb-6 tracking-widest">Hubungi Kami</h4>
+        <div class="space-y-4">
+          {whatsappNumber && (
+            <a
+              href={`https://wa.me/${whatsappNumber}`}
+              class="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="material-symbols-outlined text-[20px]">chat</span>
+              <span class="font-body-sm">WhatsApp</span>
+            </a>
+          )}
+          <p class="font-body-sm text-on-surface-variant">
+            Untuk menanyakan produk, harga, dan ketersediaannya, silakan hubungi kami melalui WhatsApp.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 font-label-sm uppercase text-on-surface-variant">
+      <p>&copy; {currentYear} AZKA MEUBEL. Hak Cipta Dilindungi.</p>
+      <p class="text-center sm:text-right">Katalog Furnitur Azka Meubel</p>
+    </div>
+  </div>
+</footer>

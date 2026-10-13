@@ -1,0 +1,96 @@
+---
+const currentPath = Astro.url.pathname;
+const whatsappNumber = import.meta.env.PUBLIC_WHATSAPP_NUMBER || '';
+
+const navItems = [
+  { path: '/', label: 'Beranda' },
+  { path: '/about', label: 'Tentang Kami' },
+  { path: '/products', label: 'Produk' },
+  { path: '/contact', label: 'Kontak' }
+];
+---
+
+<header class="fixed top-0 left-0 w-full z-50 bg-background/95 backdrop-blur-md border-b border-surface-container-highest">
+  <div class="h-14 md:h-20 max-w-[1440px] mx-auto px-4 md:px-margin flex items-center justify-between">
+    <div class="flex items-center gap-space-sm">
+      <a class="flex items-center gap-3 group" href="/">
+        <span class="font-headline-md text-xl md:text-headline-md tracking-tight text-on-surface uppercase font-normal">AZKA MEUBEL</span>
+      </a>
+    </div>
+
+    <nav class="hidden md:flex items-center gap-space-lg">
+      {navItems.map(item => (
+        <a
+          href={item.path}
+          class={`font-label-md text-label-md uppercase transition-colors pb-1 ${
+            currentPath === item.path
+              ? 'text-primary font-semibold border-b border-primary'
+              : 'text-on-surface-variant hover:text-on-surface'
+          }`}
+        >
+          {item.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="flex items-center gap-space-md">
+      {whatsappNumber && (
+        <a
+          class="hidden sm:inline-flex items-center gap-2 border border-primary px-5 py-2.5 bg-transparent font-label-md text-label-md uppercase text-primary hover:bg-surface-container hover:text-on-surface transition-colors duration-200"
+          href={`https://wa.me/${whatsappNumber}`}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span class="material-symbols-outlined text-[16px]">chat</span>
+          <span>Tanya via WhatsApp</span>
+        </a>
+      )}
+
+      <button
+        id="mobile-menu-btn"
+        class="md:hidden p-2 text-on-surface"
+        aria-label="Toggle menu"
+      >
+        <span class="material-symbols-outlined text-[22px]">menu</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="hidden md:hidden bg-background border-t border-surface-container-highest">
+    <nav class="max-w-[1440px] mx-auto px-margin-mobile py-4 flex flex-col gap-4">
+      {navItems.map(item => (
+        <a
+          href={item.path}
+          class={`font-label-md text-label-md uppercase transition-colors py-2 ${
+            currentPath === item.path
+              ? 'text-primary font-semibold'
+              : 'text-on-surface-variant'
+          }`}
+        >
+          {item.label}
+        </a>
+      ))}
+      {whatsappNumber && (
+        <a
+          class="inline-flex items-center gap-2 border border-primary px-5 py-3 bg-transparent font-label-md text-label-md uppercase text-primary justify-center sm:hidden"
+          href={`https://wa.me/${whatsappNumber}`}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span class="material-symbols-outlined text-[16px]">chat</span>
+          <span>Tanya via WhatsApp</span>
+        </a>
+      )}
+    </nav>
+  </div>
+</header>
+
+<script>
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  menuBtn?.addEventListener('click', () => {
+    mobileMenu?.classList.toggle('hidden');
+  });
+</script>

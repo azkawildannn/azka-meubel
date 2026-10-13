@@ -1,0 +1,89 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Admin | AZKA MEUBEL' } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { path: '/admin', label: 'Dashboard', icon: 'dashboard' },
+  { path: '/admin/products', label: 'Produk', icon: 'inventory_2' },
+];
+---
+
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-surface-container-low">
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-background border-r border-surface-container-highest flex flex-col">
+        <div class="p-6 border-b border-surface-container-highest">
+          <h1 class="font-headline-md text-on-surface uppercase tracking-tight">
+            AZKA MEUBEL
+          </h1>
+          <p class="font-label-sm text-on-surface-variant mt-1">Panel Admin</p>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2">
+          {navItems.map(item => (
+            <a
+              href={item.path}
+              class={`flex items-center gap-3 px-4 py-3 rounded transition-colors ${
+                currentPath === item.path
+                  ? 'bg-primary text-on-primary'
+                  : 'text-on-surface hover:bg-surface-container'
+              }`}
+            >
+              <span class="material-symbols-outlined text-[20px]">{item.icon}</span>
+              <span class="font-label-md uppercase">{item.label}</span>
+            </a>
+          ))}
+        </nav>
+
+        <div class="p-4 border-t border-surface-container-highest">
+          <button
+            id="logout-btn"
+            class="w-full flex items-center gap-3 px-4 py-3 text-on-surface hover:bg-surface-container rounded transition-colors"
+          >
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+            <span class="font-label-md uppercase">Keluar</span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 overflow-y-auto">
+        <div class="p-8">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script is:inline define:vars={{ supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL, supabaseKey: import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY }}>
+      const { createClient } = supabase;
+      const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+      const logoutBtn = document.getElementById('logout-btn');
+      
+      logoutBtn?.addEventListener('click', async () => {
+        try {
+          await supabaseClient.auth.signOut();
+          window.location.href = '/admin/login';
+        } catch (error) {
+          console.error('Logout error:', error);
+          alert('Gagal logout. Silakan coba lagi.');
+        }
+      });
+    </script>
+  </body>
+</html>
