@@ -60,7 +60,7 @@ const { data: categories } = await supabase
     </div>
 
     <div class="bg-background border border-surface-container-highest p-8">
-      <form id="product-form" class="space-y-8">
+      <form id="product-form" method="POST" action="#" class="space-y-8">
         <!-- Basic Info -->
         <div class="space-y-6">
           <h2 class="font-headline-sm text-on-surface pb-2 border-b border-surface-container-highest">
@@ -338,10 +338,11 @@ const { data: categories } = await supabase
         <div class="flex items-center gap-4 pt-6 border-t border-surface-container-highest">
           <button
             type="submit"
-            class="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-3 font-label-md uppercase hover:bg-secondary transition-colors"
+            id="submit-button"
+            class="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-3 font-label-md uppercase hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span class="material-symbols-outlined text-[18px]">save</span>
-            <span>Simpan Produk</span>
+            <span id="submit-text">Simpan Produk</span>
           </button>
           <a
             href="/admin/products"
@@ -358,242 +359,389 @@ const { data: categories } = await supabase
     </div>
   </div>
 
-  <script>
-    import { createProduct } from '../../../lib/products';
-    import { uploadProductImage, validateImageFile } from '../../../lib/storage';
+  <!-- Load Supabase client for product creation -->
+  <script is:inline src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    const form = document.getElementById('product-form') as HTMLFormElement;
-    const messageDiv = document.getElementById('form-message');
-    const nameInput = document.getElementById('name') as HTMLInputElement;
-    const slugInput = document.getElementById('slug') as HTMLInputElement;
-    const productCodeInput = document.getElementById('product_code') as HTMLInputElement;
-    const mainImageFileInput = document.getElementById('main_image_file') as HTMLInputElement;
-    const mainImageUrlInput = document.getElementById('main_image_url') as HTMLInputElement;
-    const mainImagePreview = document.getElementById('main-image-preview') as HTMLElement;
-    const galleryFilesInput = document.getElementById('gallery_files') as HTMLInputElement;
-    const galleryPreview = document.getElementById('gallery-preview') as HTMLElement;
-    const galleryPreviewContainer = document.getElementById('gallery-preview-container') as HTMLElement;
+  <script is:inline define:vars={{
+    supabaseUrl: import.meta.env.PUBLIC_SUPABASE_URL,
+    supabaseKey: import.meta.env.PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  }}>
+    // Initialize variables
+    let selectedGalleryFiles = [];
+    let slugManuallyEdited = false;
+    let isSubmitting = false;
 
-    let selectedGalleryFiles: File[] = [];
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('product-form');
+      const messageDiv = document.getElementById('form-message');
+      const nameInput = document.getElementById('name');
+      const slugInput = document.getElementById('slug');
+      const productCodeInput = document.getElementById('product_code');
+      const mainImageFileInput = document.getElementById('main_image_file');
+      const mainImageUrlInput = document.getElementById('main_image_url');
+      const mainImagePreview = document.getElementById('main-image-preview');
+      const galleryFilesInput = document.getElementById('gallery_files');
+      const galleryPreview = document.getElementById('gallery-preview');
+      const galleryPreviewContainer = document.getElementById('gallery-preview-container');
+      const submitButton = document.getElementById('submit-button');
+      const submitText = document.getElementById('submit-text');
 
-    // Auto-generate slug from name
-    nameInput?.addEventListener('input', () => {
-      const slug = nameInput.value
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      if (slugInput) {
-        slugInput.value = slug;
+      // Initialize Supabase client
+      const { createClient } = supabase;
+      const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+      console.log('Form script initialized');
+
+      // Auto-generate slug from name
+      if (nameInput && slugInput) {
+        nameInput.addEventListener('input', () => {
+          if (!slugManuallyEdited) {
+            const slug = nameInput.value
+              .toLowerCase()
+              .trim()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/\s+/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-+|-+$/g, '');
+
+            slugInput.value = slug;
+            console.log('Auto-generated slug:', slug);
+          }
+        });
+
+        // Mark slug as manually edited if user changes it
+        slugInput.addEventListener('input', () => {
+          slugManuallyEdited = true;
+          console.log('Slug manually edited');
+        });
+
+        // Reset slugManuallyEdited when slug is cleared
+        slugInput.addEventListener('change', () => {
+          if (!slugInput.value || slugInput.value.trim() === '') {
+            slugManuallyEdited = false;
+            console.log('Slug cleared, auto-generation enabled');
+          }
+        });
       }
-    });
 
-    // Preview main image
-    mainImageFileInput?.addEventListener('change', (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const validation = validateImageFile(file);
-        if (!validation.valid) {
-          alert(validation.error);
-          mainImageFileInput.value = '';
+      // Image validation function
+      function validateImageFile(file) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+        if (!allowedTypes.includes(file.type)) {
+          return { valid: false, error: 'Format file tidak didukung. Gunakan JPG, PNG, atau WebP.' };
+        }
+
+        if (file.size > maxSize) {
+          return { valid: false, error: 'Ukuran file terlalu besar. Maksimal 5MB.' };
+        }
+
+        return { valid: true };
+      }
+
+      // Preview main image
+      if (mainImageFileInput && mainImagePreview) {
+        mainImageFileInput.addEventListener('change', (e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const validation = validateImageFile(file);
+            if (!validation.valid) {
+              alert(validation.error);
+              mainImageFileInput.value = '';
+              return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const img = mainImagePreview.querySelector('img');
+              if (img && e.target?.result) {
+                img.src = e.target.result;
+                mainImagePreview.classList.remove('hidden');
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      }
+
+      // Preview gallery images
+      if (galleryFilesInput && galleryPreviewContainer) {
+        galleryFilesInput.addEventListener('change', (e) => {
+          const files = Array.from(e.target.files || []);
+
+          if (files.length === 0) return;
+
+          const invalidFiles = [];
+          const validFiles = [];
+
+          files.forEach(file => {
+            const validation = validateImageFile(file);
+            if (!validation.valid) {
+              invalidFiles.push(`${file.name}: ${validation.error}`);
+            } else {
+              validFiles.push(file);
+            }
+          });
+
+          if (invalidFiles.length > 0) {
+            alert('Beberapa file tidak valid:\n' + invalidFiles.join('\n'));
+          }
+
+          if (validFiles.length === 0) {
+            galleryFilesInput.value = '';
+            return;
+          }
+
+          selectedGalleryFiles = validFiles;
+          renderGalleryPreviews();
+        });
+      }
+
+      function renderGalleryPreviews() {
+        if (!galleryPreviewContainer) return;
+
+        galleryPreviewContainer.innerHTML = '';
+
+        if (selectedGalleryFiles.length === 0) {
+          if (galleryPreview) galleryPreview.classList.add('hidden');
           return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = mainImagePreview?.querySelector('img');
-          if (img && e.target?.result) {
-            img.src = e.target.result as string;
-            mainImagePreview?.classList.remove('hidden');
-          }
-        };
-        reader.readAsDataURL(file);
+        if (galleryPreview) galleryPreview.classList.remove('hidden');
+
+        selectedGalleryFiles.forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const container = document.createElement('div');
+            container.className = 'relative group';
+
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.alt = file.name;
+            img.className = 'w-full h-32 object-cover border border-surface-container-highest';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'absolute top-2 right-2 bg-error text-on-primary w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity';
+            removeBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">close</span>';
+            removeBtn.onclick = () => removeGalleryImage(index);
+
+            const fileName = document.createElement('p');
+            fileName.className = 'font-body-sm text-on-surface-variant mt-1 truncate';
+            fileName.textContent = file.name;
+
+            container.appendChild(img);
+            container.appendChild(removeBtn);
+            container.appendChild(fileName);
+            galleryPreviewContainer.appendChild(container);
+          };
+          reader.readAsDataURL(file);
+        });
       }
-    });
 
-    // Preview gallery images
-    galleryFilesInput?.addEventListener('change', (e) => {
-      const files = Array.from((e.target as HTMLInputElement).files || []);
-      
-      if (files.length === 0) return;
+      function removeGalleryImage(index) {
+        selectedGalleryFiles.splice(index, 1);
+        renderGalleryPreviews();
 
-      // Validate all files
-      const invalidFiles: string[] = [];
-      const validFiles: File[] = [];
-
-      files.forEach(file => {
-        const validation = validateImageFile(file);
-        if (!validation.valid) {
-          invalidFiles.push(`${file.name}: ${validation.error}`);
-        } else {
-          validFiles.push(file);
+        if (galleryFilesInput) {
+          galleryFilesInput.value = '';
         }
-      });
-
-      if (invalidFiles.length > 0) {
-        alert('Beberapa file tidak valid:\n' + invalidFiles.join('\n'));
       }
 
-      if (validFiles.length === 0) {
-        galleryFilesInput.value = '';
-        return;
-      }
-
-      selectedGalleryFiles = validFiles;
-      renderGalleryPreviews();
-    });
-
-    function renderGalleryPreviews() {
-      if (!galleryPreviewContainer) return;
-
-      galleryPreviewContainer.innerHTML = '';
-
-      if (selectedGalleryFiles.length === 0) {
-        galleryPreview?.classList.add('hidden');
-        return;
-      }
-
-      galleryPreview?.classList.remove('hidden');
-
-      selectedGalleryFiles.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const container = document.createElement('div');
-          container.className = 'relative group';
-          
-          const img = document.createElement('img');
-          img.src = e.target?.result as string;
-          img.alt = file.name;
-          img.className = 'w-full h-32 object-cover border border-surface-container-highest';
-          
-          const removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.className = 'absolute top-2 right-2 bg-error text-on-primary w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity';
-          removeBtn.innerHTML = '<span class="material-symbols-outlined text-[18px]">close</span>';
-          removeBtn.onclick = () => removeGalleryImage(index);
-          
-          const fileName = document.createElement('p');
-          fileName.className = 'font-body-sm text-on-surface-variant mt-1 truncate';
-          fileName.textContent = file.name;
-
-          container.appendChild(img);
-          container.appendChild(removeBtn);
-          container.appendChild(fileName);
-          galleryPreviewContainer.appendChild(container);
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function removeGalleryImage(index: number) {
-      selectedGalleryFiles.splice(index, 1);
-      renderGalleryPreviews();
-      
-      // Reset file input
-      if (galleryFilesInput) {
-        galleryFilesInput.value = '';
-      }
-    }
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(form);
-      const mainImageFile = mainImageFileInput?.files?.[0];
-      const mainImageUrl = mainImageUrlInput?.value;
-      const productCode = productCodeInput?.value;
-
-      // Validate main image
-      if (!mainImageFile && !mainImageUrl) {
-        alert('Gambar utama wajib diisi. Upload file atau masukkan URL.');
-        return;
-      }
-
-      try {
+      function showMessage(text, isError = false) {
         if (messageDiv) {
           messageDiv.classList.remove('hidden');
           const p = messageDiv.querySelector('p');
           if (p) {
-            p.textContent = 'Mengunggah gambar...';
-            p.style.backgroundColor = '#d4c4b6';
-            p.style.color = '#1c1c18';
+            p.textContent = text;
+            if (isError) {
+              p.style.backgroundColor = '#ffdad6';
+              p.style.color = '#ba1a1a';
+            } else {
+              p.style.backgroundColor = '#d4c4b6';
+              p.style.color = '#1c1c18';
+            }
           }
         }
+      }
 
-        // Upload main image if file is provided
-        let finalMainImageUrl = mainImageUrl;
-        if (mainImageFile && productCode) {
-          finalMainImageUrl = await uploadProductImage(mainImageFile, productCode);
+      function setSubmitState(submitting, text) {
+        isSubmitting = submitting;
+        if (submitButton) {
+          submitButton.disabled = submitting;
+        }
+        if (submitText && text) {
+          submitText.textContent = text;
+        }
+      }
+
+      // Upload image function
+      async function uploadProductImage(file, productCode) {
+        const timestamp = Date.now();
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${productCode}-${timestamp}.${fileExt}`;
+        const filePath = `products/${fileName}`;
+
+        const { error } = await supabaseClient.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Upload error:', error);
+          throw new Error('Gagal mengunggah gambar: ' + error.message);
         }
 
-        if (!finalMainImageUrl) {
-          throw new Error('Gambar utama harus diisi');
-        }
+        const { data: { publicUrl } } = supabaseClient.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
 
-        // Upload gallery images
-        const galleryUrls: string[] = [];
-        if (selectedGalleryFiles.length > 0 && productCode) {
-          for (let i = 0; i < selectedGalleryFiles.length; i++) {
-            const file = selectedGalleryFiles[i];
-            if (messageDiv) {
-              const p = messageDiv.querySelector('p');
-              if (p) {
-                p.textContent = `Mengunggah gambar tambahan ${i + 1}/${selectedGalleryFiles.length}...`;
+        return publicUrl;
+      }
+
+      // Form submit handler
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          if (isSubmitting) {
+            console.log('Form already submitting, ignoring duplicate submission');
+            return;
+          }
+
+          console.log('Form submitted');
+
+          const formData = new FormData(form);
+          const mainImageFile = mainImageFileInput?.files?.[0];
+          const mainImageUrl = mainImageUrlInput?.value?.trim();
+          const productCode = productCodeInput?.value?.trim();
+          const slug = slugInput?.value?.trim();
+          const categoryId = formData.get('category_id');
+
+          // Validate required fields
+          if (!productCode) {
+            alert('ID Produk wajib diisi.');
+            return;
+          }
+
+          if (!slug) {
+            alert('URL Slug wajib diisi.');
+            return;
+          }
+
+          if (!categoryId) {
+            alert('Kategori wajib dipilih.');
+            return;
+          }
+
+          // Validate main image
+          if (!mainImageFile && !mainImageUrl) {
+            alert('Gambar utama wajib diisi. Upload file atau masukkan URL.');
+            return;
+          }
+
+          setSubmitState(true, 'Menyimpan...');
+
+          try {
+            showMessage('Memproses gambar...');
+
+            // Upload main image if file is provided
+            let finalMainImageUrl = mainImageUrl;
+            if (mainImageFile) {
+              showMessage('Mengunggah gambar utama...');
+              finalMainImageUrl = await uploadProductImage(mainImageFile, productCode);
+              console.log('Main image uploaded:', finalMainImageUrl);
+            }
+
+            if (!finalMainImageUrl) {
+              throw new Error('Gambar utama harus diisi');
+            }
+
+            // Upload gallery images
+            const galleryUrls = [];
+            if (selectedGalleryFiles.length > 0) {
+              for (let i = 0; i < selectedGalleryFiles.length; i++) {
+                const file = selectedGalleryFiles[i];
+                showMessage(`Mengunggah gambar tambahan ${i + 1}/${selectedGalleryFiles.length}...`);
+                try {
+                  const url = await uploadProductImage(file, productCode);
+                  galleryUrls.push(url);
+                  console.log(`Gallery image ${i + 1} uploaded:`, url);
+                } catch (error) {
+                  console.error(`Failed to upload gallery image ${i + 1}:`, error);
+                }
               }
             }
-            try {
-              const url = await uploadProductImage(file, productCode);
-              galleryUrls.push(url);
-            } catch (error) {
-              console.error(`Failed to upload gallery image ${i + 1}:`, error);
-              // Continue with other uploads
+
+            showMessage('Menyimpan produk...');
+
+            const productData = {
+              name: formData.get('name'),
+              product_code: productCode,
+              slug: slug,
+              category_id: categoryId,
+              short_description: formData.get('short_description') || null,
+              description: formData.get('description') || null,
+              price: formData.get('price') ? parseFloat(formData.get('price')) : null,
+              show_price: formData.get('show_price') === 'true',
+              material: formData.get('material') || null,
+              finish: formData.get('finish') || null,
+              dimensions: formData.get('dimensions') || null,
+              main_image: finalMainImageUrl,
+              gallery: galleryUrls.length > 0 ? galleryUrls : null,
+              status: formData.get('status') || 'draft',
+            };
+
+            console.log('Saving product to Supabase:', productData);
+
+            const { data, error } = await supabaseClient
+              .from('products')
+              .insert([productData])
+              .select()
+              .single();
+
+            if (error) {
+              console.error('Supabase error:', error);
+              throw error;
             }
-          }
-        }
 
-        const productData = {
-          name: formData.get('name') as string,
-          product_code: productCode as string,
-          slug: formData.get('slug') as string,
-          category_id: formData.get('category_id') as string,
-          short_description: formData.get('short_description') as string || null,
-          description: formData.get('description') as string || null,
-          price: formData.get('price') ? parseFloat(formData.get('price') as string) : null,
-          show_price: formData.get('show_price') === 'true',
-          material: formData.get('material') as string || null,
-          finish: formData.get('finish') as string || null,
-          dimensions: formData.get('dimensions') as string || null,
-          main_image: finalMainImageUrl,
-          gallery: galleryUrls.length > 0 ? galleryUrls : null,
-          status: formData.get('status') as 'draft' | 'published',
-        };
+            console.log('Product saved successfully:', data);
+            showMessage('Produk berhasil disimpan!');
 
-        await createProduct(productData);
-        
-        if (messageDiv) {
-          messageDiv.classList.remove('hidden');
-          const p = messageDiv.querySelector('p');
-          if (p) {
-            p.textContent = 'Produk berhasil disimpan!';
-            p.style.backgroundColor = '#d4c4b6';
-            p.style.color = '#1c1c18';
-          }
-        }
+            setTimeout(() => {
+              window.location.href = '/admin/products';
+            }, 1000);
+          } catch (error) {
+            console.error('Error saving product:', error);
 
-        setTimeout(() => {
-          window.location.href = '/admin/products';
-        }, 1000);
-      } catch (error: any) {
-        if (messageDiv) {
-          messageDiv.classList.remove('hidden');
-          const p = messageDiv.querySelector('p');
-          if (p) {
-            p.textContent = error.message || 'Gagal menyimpan produk. Silakan coba lagi.';
-            p.style.backgroundColor = '#ffdad6';
-            p.style.color = '#ba1a1a';
+            let errorMessage = 'Gagal menyimpan produk. ';
+
+            if (error.code === '23505') {
+              if (error.message && error.message.includes('slug')) {
+                errorMessage += 'URL Slug sudah digunakan produk lain. Silakan gunakan slug berbeda.';
+              } else if (error.message && error.message.includes('product_code')) {
+                errorMessage += 'ID Produk sudah digunakan produk lain. Silakan gunakan ID berbeda.';
+              } else {
+                errorMessage += 'Data sudah ada dalam database.';
+              }
+            } else if (error.code === '23503') {
+              errorMessage += 'Kategori tidak valid. Silakan pilih kategori yang tersedia.';
+            } else if (error.code === 'PGRST116') {
+              errorMessage += 'Tidak memiliki izin untuk menambah produk. Pastikan Anda sudah login sebagai admin.';
+            } else if (error.message) {
+              errorMessage += error.message;
+            } else {
+              errorMessage += 'Silakan coba lagi.';
+            }
+
+            showMessage(errorMessage, true);
+            setSubmitState(false, 'Simpan Produk');
           }
-        }
+        });
       }
     });
   </script>

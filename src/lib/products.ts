@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import type { Product } from '../types';
 
-export async function getPublishedProducts(categorySlug?: string, limit?: number) {
+export async function getPublishedProducts(categorySlug?: string, searchQuery?: string, limit?: number) {
   let query = supabase
     .from('products')
     .select(`
@@ -25,10 +25,34 @@ export async function getPublishedProducts(categorySlug?: string, limit?: number
   let products = data as Product[];
 
   // Filter by category slug if provided
-  if (categorySlug && products) {
+  if (categorySlug && categorySlug !== 'lainnya' && products) {
     products = products.filter(product => 
       product.category?.slug === categorySlug
     );
+  }
+
+  // Handle "lainnya" category - products not in main categories
+  if (categorySlug === 'lainnya' && products) {
+    const mainCategories = ['kursi', 'sofa', 'meja', 'lemari', 'pintu', 'custom'];
+    products = products.filter(product =>
+      !product.category?.slug || !mainCategories.includes(product.category.slug)
+    );
+  }
+
+  // Filter by search query if provided
+  if (searchQuery && products) {
+    const query = searchQuery.toLowerCase().trim();
+    products = products.filter(product => {
+      const searchableFields = [
+        product.name?.toLowerCase() || '',
+        product.product_code?.toLowerCase() || '',
+        product.short_description?.toLowerCase() || '',
+        product.description?.toLowerCase() || '',
+        product.category?.name?.toLowerCase() || ''
+      ];
+
+      return searchableFields.some(field => field.includes(query));
+    });
   }
 
   return products;
@@ -54,7 +78,7 @@ export async function getProductBySlug(slug: string) {
 }
 
 export async function getFeaturedProducts(limit = 6) {
-  return getPublishedProducts(undefined, limit);
+  return getPublishedProducts(undefined, undefined, limit);
 }
 
 export async function getRelatedProducts(categoryId: string, currentProductId: string, limit = 3) {
@@ -109,6 +133,25 @@ export async function createProduct(product: Partial<Product>) {
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
+  // Get current session
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Anda harus login untuk memperbarui produk');
+  }
+
+  // Verify admin role
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Anda tidak memiliki izin untuk memperbarui produk');
+  }
+
+  // Perform update
   const { data, error } = await supabase
     .from('products')
     .update(updates)
@@ -117,20 +160,56 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
     .single();
 
   if (error) {
-    throw error;
+    console.error('Update product error:', error);
+    
+    // Check for specific errors
+    if (error.code === '23505') {
+      if (error.message.includes('slug')) {
+        throw new Error('Slug sudah digunakan oleh produk lain');
+      }
+      if (error.message.includes('product_code')) {
+        throw new Error('Kode produk sudah digunakan');
+      }
+    }
+    
+    throw new Error(error.message || 'Gagal memperbarui produk');
+  }
+
+  if (!data) {
+    throw new Error('Produk tidak ditemukan atau tidak dapat diperbarui');
   }
 
   return data as Product;
 }
 
 export async function deleteProduct(id: string) {
+  // Get current session
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session) {
+    throw new Error('Anda harus login untuk menghapus produk');
+  }
+
+  // Verify admin role
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Anda tidak memiliki izin untuk menghapus produk');
+  }
+
+  // Perform delete
   const { error } = await supabase
     .from('products')
     .delete()
     .eq('id', id);
 
   if (error) {
-    throw error;
+    console.error('Delete product error:', error);
+    throw new Error(error.message || 'Gagal menghapus produk');
   }
 
   return true;

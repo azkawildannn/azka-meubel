@@ -4,7 +4,8 @@ import ProductCard from '../../components/ProductCard.astro';
 import { getPublishedProducts } from '../../lib/products';
 
 const categorySlug = Astro.url.searchParams.get('category');
-const products = await getPublishedProducts(categorySlug || undefined);
+const searchQuery = Astro.url.searchParams.get('q');
+const products = await getPublishedProducts(categorySlug || undefined, searchQuery || undefined);
 
 const categories = [
   { name: 'Semua Produk', slug: '' },
@@ -12,8 +13,9 @@ const categories = [
   { name: 'Sofa', slug: 'sofa' },
   { name: 'Meja', slug: 'meja' },
   { name: 'Lemari', slug: 'lemari' },
-  { name: 'Kamar Tidur', slug: 'kamar-tidur' },
-  { name: 'Ruang Kerja', slug: 'ruang-kerja' }
+  { name: 'Pintu', slug: 'pintu' },
+  { name: 'Custom', slug: 'custom' },
+  { name: 'Lainnya', slug: 'lainnya' }
 ];
 ---
 
@@ -39,21 +41,61 @@ const categories = [
         </div>
       </div>
 
-      <!-- Filter Bar -->
-      <div class="pt-8 pb-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-        <div class="flex flex-wrap items-center gap-2 md:gap-3">
-          {categories.map(cat => (
-            <a
-              href={cat.slug ? `/products?category=${cat.slug}` : '/products'}
-              class={`px-5 py-2.5 font-label-md uppercase transition-colors ${
-                (!categorySlug && !cat.slug) || categorySlug === cat.slug
-                  ? 'bg-primary text-on-primary'
-                  : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
-              }`}
+      <!-- Search Bar -->
+      <div class="pt-8 pb-6">
+        <form method="GET" action="/products" class="max-w-2xl">
+          <div class="flex gap-2">
+            <div class="relative flex-1">
+              <input
+                type="text"
+                name="q"
+                value={searchQuery || ''}
+                placeholder="Cari nama produk, kode, atau kategori..."
+                class="w-full bg-surface-container-low px-4 py-3 font-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-background transition-colors border border-surface-container-highest focus:border-primary"
+              />
+              {searchQuery && (
+                <a
+                  href={categorySlug ? `/products?category=${categorySlug}` : '/products'}
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors"
+                  aria-label="Hapus pencarian"
+                >
+                  <span class="material-symbols-outlined text-[20px]">close</span>
+                </a>
+              )}
+            </div>
+            <input type="hidden" name="category" value={categorySlug || ''} />
+            <button
+              type="submit"
+              class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 font-label-md uppercase hover:bg-secondary transition-colors whitespace-nowrap"
             >
-              {cat.name}
-            </a>
-          ))}
+              <span class="material-symbols-outlined text-[18px]">search</span>
+              <span class="hidden sm:inline">Cari</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="pt-4 pb-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+          {categories.map(cat => {
+            const href = cat.slug
+              ? `/products?category=${cat.slug}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ''}`
+              : `/products${searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : ''}`;
+
+            return (
+              <a
+                href={href}
+                class={`px-5 py-2.5 font-label-md uppercase transition-colors ${
+                  (!categorySlug && !cat.slug) || categorySlug === cat.slug
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-highest'
+                }`}
+              >
+                {cat.name}
+              </a>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -80,21 +122,34 @@ const categories = [
       ) : (
         <div class="text-center py-20">
           <span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-4 block">
-            inventory_2
+            {searchQuery ? 'search_off' : 'inventory_2'}
           </span>
           <h3 class="font-headline-sm text-on-surface mb-2">
-            Produk Belum Tersedia
+            {searchQuery ? 'Produk Tidak Ditemukan' : 'Produk Belum Tersedia'}
           </h3>
           <p class="font-body-md text-on-surface-variant mb-6">
-            Belum ada produk dalam kategori ini. Silakan pilih kategori lain untuk melihat koleksi yang tersedia.
+            {searchQuery
+              ? 'Coba kata kunci lain atau pilih kategori berbeda untuk menemukan produk yang Anda cari.'
+              : 'Belum ada produk dalam kategori ini. Silakan pilih kategori lain untuk melihat koleksi yang tersedia.'
+            }
           </p>
-          <a
-            href="/products"
-            class="inline-flex items-center gap-2 font-label-md uppercase text-primary hover:text-secondary transition-colors"
-          >
-            <span>Lihat Semua Produk</span>
-            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </a>
+          {searchQuery ? (
+            <a
+              href={categorySlug ? `/products?category=${categorySlug}` : '/products'}
+              class="inline-flex items-center gap-2 font-label-md uppercase text-primary hover:text-secondary transition-colors"
+            >
+              <span class="material-symbols-outlined text-[16px]">close</span>
+              <span>Hapus Pencarian</span>
+            </a>
+          ) : (
+            <a
+              href="/products"
+              class="inline-flex items-center gap-2 font-label-md uppercase text-primary hover:text-secondary transition-colors"
+            >
+              <span>Lihat Semua Produk</span>
+              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </a>
+          )}
         </div>
       )}
     </div>

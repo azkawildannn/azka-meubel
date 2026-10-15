@@ -5,7 +5,7 @@ import { getFeaturedProducts } from '../lib/products';
 
 let featuredProducts: any[] = [];
 try {
-  featuredProducts = await getFeaturedProducts(6);
+  featuredProducts = await getFeaturedProducts(3);
 } catch (error) {
   console.error('Error loading products:', error);
 }
@@ -31,7 +31,7 @@ const categories = [
     name: 'Kamar Tidur',
     slug: 'kamar-tidur',
     description: 'Pilihan furnitur untuk melengkapi dan menata kamar tidur Anda.',
-    image: 'https://media.istockphoto.com/id/1459975257/id/foto/dinding-mockup-dengan-latar-belakang-interior-kamar-tidur-dengan-latar-belakang-dinding-hijau.jpg?s=1024x1024&w=is&k=20&c=gzR0ktxVAZkt-TfUAYgmasT15E-dWDAbYF1PrB7dA4k=',
+    image: 'https://i.pinimg.com/736x/ab/93/7e/ab937e1ee8220043a4613bc88e007106.jpg',
     label: 'KAMAR TIDUR'
   },
   {

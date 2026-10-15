@@ -4,6 +4,83 @@ All notable changes to AZKA MEUBEL project.
 
 ---
 
+## [1.4.0] - 2026-10-15
+
+### 🔍 Product Catalog Enhancement - Search & Category Update
+
+**Added search functionality and updated product categories (Pintu, Custom, Lainnya)**
+
+#### New Features:
+✅ **Product Search**:
+- Search bar above category filters
+- Searches across: product name, code, description, category
+- Case-insensitive matching
+- Preserves category context when searching
+- Clear button to remove search query
+- Mobile-responsive design
+
+✅ **Category Updates**:
+- **Added**: Pintu (pintu)
+- **Added**: Custom (custom)
+- **Added**: Lainnya (lainnya) - virtual category for uncategorized products
+- **Removed**: Kamar Tidur (kamar-tidur) - kept in database for existing products
+- **Removed**: Ruang Kerja (ruang-kerja) - kept in database for existing products
+
+#### Category Logic:
+- **Lainnya** displays products NOT in main categories (kursi, sofa, meja, lemari, pintu, custom)
+- Existing products with old categories (kamar-tidur, ruang-kerja) appear in "Lainnya"
+- No data loss - old categories remain in database
+- Admin can update product categories to new options
+
+#### Search + Filter Integration:
+- Search works with category filters
+- URL structure: `/products?category=meja&q=jati`
+- Switching categories preserves search query
+- Empty states distinguish between "no results" and "no products"
+
+#### Updated Files:
+- `src/pages/products/index.astro` - Added search UI and updated filter list
+- `src/lib/products.ts` - Added search and "lainnya" logic
+- `supabase/migrations/003_update_categories.sql` - New categories (Pintu, Custom)
+
+#### Admin Integration:
+- Categories dropdown automatically reflects database categories
+- Admin can assign products to Pintu and Custom
+- Old categories still editable until admin updates them
+- No manual admin file changes needed
+
+#### URL Examples:
+- `/products` - All products
+- `/products?category=kursi` - Kursi category
+- `/products?category=pintu` - Pintu category
+- `/products?category=custom` - Custom category
+- `/products?category=lainnya` - Other categories
+- `/products?q=meja` - Search "meja" in all products
+- `/products?category=kursi&q=jati` - Search "jati" in Kursi category
+
+#### Verification:
+- ✅ Build successful: 0 errors
+- ✅ No trailing whitespace
+- ✅ Production audit: 0 vulnerabilities
+- ✅ TypeScript types: Valid
+- ✅ Filter bar wraps properly on tablet (922px)
+- ✅ Search bar responsive on mobile
+- ✅ Empty states updated with context
+
+#### Responsive Design:
+- Desktop: Single-row filters + full search bar
+- Tablet (922px): Wrapped filters + search bar
+- Mobile: Stacked filters + full-width search
+- Grid maintained: 3 columns desktop, 2 columns mobile
+
+#### Migration Instructions:
+1. Run migration: `003_update_categories.sql` (adds Pintu, Custom to database)
+2. No manual data migration needed
+3. Admin can update old products to new categories as needed
+4. Products with old categories automatically appear in "Lainnya"
+
+---
+
 ## [1.3.0] - 2026-10-13
 
 ### 🔒 Major Security & Runtime Update - Astro 7 + Node.js 24

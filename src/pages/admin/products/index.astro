@@ -200,41 +200,67 @@ const products = await getAllProducts();
   <script>
     import { deleteProduct } from '../../../lib/products';
 
-    const deleteButtons = document.querySelectorAll('.delete-btn');
-    const modal = document.getElementById('delete-modal');
-    const productNameSpan = document.getElementById('delete-product-name');
-    const cancelBtn = document.getElementById('cancel-delete');
-    const confirmBtn = document.getElementById('confirm-delete');
-    let currentDeleteId: string | null = null;
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const deleteButtons = document.querySelectorAll('.delete-btn');
+      const modal = document.getElementById('delete-modal');
+      const productNameSpan = document.getElementById('delete-product-name');
+      const cancelBtn = document.getElementById('cancel-delete');
+      const confirmBtn = document.getElementById('confirm-delete');
+      let currentDeleteId: string | null = null;
 
-    deleteButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        const name = btn.getAttribute('data-name');
-        
-        if (id && name && productNameSpan && modal) {
-          currentDeleteId = id;
-          productNameSpan.textContent = name;
-          modal.classList.remove('hidden');
+      deleteButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = btn.getAttribute('data-id');
+          const name = btn.getAttribute('data-name');
+          
+          if (id && name && productNameSpan && modal) {
+            currentDeleteId = id;
+            productNameSpan.textContent = name;
+            modal.classList.remove('hidden');
+          }
+        });
+      });
+
+      cancelBtn?.addEventListener('click', () => {
+        modal?.classList.add('hidden');
+        currentDeleteId = null;
+      });
+
+      confirmBtn?.addEventListener('click', async () => {
+        if (!currentDeleteId) return;
+
+        // Disable button to prevent double clicks
+        if (confirmBtn instanceof HTMLButtonElement) {
+          confirmBtn.disabled = true;
+          confirmBtn.textContent = 'Menghapus...';
+        }
+
+        try {
+          await deleteProduct(currentDeleteId);
+          window.location.reload();
+        } catch (error) {
+          console.error('Delete error:', error);
+          alert(error instanceof Error ? error.message : 'Gagal menghapus produk. Silakan coba lagi.');
+          
+          // Re-enable button on error
+          if (confirmBtn instanceof HTMLButtonElement) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Hapus';
+          }
+          modal?.classList.add('hidden');
+          currentDeleteId = null;
         }
       });
-    });
 
-    cancelBtn?.addEventListener('click', () => {
-      modal?.classList.add('hidden');
-      currentDeleteId = null;
-    });
-
-    confirmBtn?.addEventListener('click', async () => {
-      if (!currentDeleteId) return;
-
-      try {
-        await deleteProduct(currentDeleteId);
-        window.location.reload();
-      } catch (error) {
-        console.error('Delete error:', error);
-        alert('Gagal menghapus produk. Silakan coba lagi.');
-      }
+      // Close modal on backdrop click
+      modal?.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+          currentDeleteId = null;
+        }
+      });
     });
   </script>
 </AdminLayout>

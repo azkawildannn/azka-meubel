@@ -78,7 +78,7 @@ const { data: categories } = await supabase
     </div>
 
     <div class="bg-background border border-surface-container-highest p-8">
-      <form id="product-form" class="space-y-8">
+      <form id="product-form" method="post" class="space-y-8">
         <input type="hidden" name="id" value={product.id} />
 
         <!-- Basic Info -->
@@ -458,6 +458,8 @@ const { data: categories } = await supabase
 
     let selectedGalleryFiles: File[] = [];
     let existingGalleryUrls: string[] = [];
+    let slugManuallyEdited = false;
+    let isSubmitting = false;
 
     // Initialize existing gallery URLs
     if (existingGalleryContainer) {
@@ -468,16 +470,23 @@ const { data: categories } = await supabase
       });
     }
 
-    // Auto-generate slug from name
+    // Track manual slug edits
+    slugInput?.addEventListener('input', () => {
+      slugManuallyEdited = true;
+    });
+
+    // Auto-generate slug from name only if not manually edited
     nameInput?.addEventListener('input', () => {
-      const slug = nameInput.value
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
-      if (slugInput) {
-        slugInput.value = slug;
+      if (!slugManuallyEdited) {
+        const slug = nameInput.value
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-');
+        if (slugInput) {
+          slugInput.value = slug;
+        }
       }
     });
 
@@ -609,10 +618,27 @@ const { data: categories } = await supabase
       }
     };
 
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    // Form submit handler
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (isSubmitting) {
+          console.log('Form already submitting, ignoring duplicate submission');
+          return;
+        }
 
-      const formData = new FormData(form);
+        // Disable submit button to prevent double submission
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          const btnText = submitBtn.querySelector('span:last-child');
+          if (btnText) btnText.textContent = 'Menyimpan...';
+        }
+
+        isSubmitting = true;
+
+        const formData = new FormData(form);
       const id = formData.get('id') as string;
       const mainImageFile = mainImageFileInput?.files?.[0];
       const mainImageUrl = mainImageUrlInput?.value;
@@ -684,6 +710,16 @@ const { data: categories } = await supabase
           status: formData.get('status') as 'draft' | 'published',
         };
 
+        // Validate required fields
+        if (!productData.name || !productData.product_code || !productData.slug || !productData.category_id) {
+          throw new Error('Mohon lengkapi semua field yang wajib diisi');
+        }
+
+        if (messageDiv) {
+          const p = messageDiv.querySelector('p');
+          if (p) p.textContent = 'Menyimpan perubahan...';
+        }
+
         await updateProduct(id, productData);
         
         if (messageDiv) {
@@ -700,6 +736,18 @@ const { data: categories } = await supabase
           window.location.href = '/admin/products';
         }, 1000);
       } catch (error: any) {
+        console.error('Update error:', error);
+        
+        isSubmitting = false;
+        
+        // Re-enable submit button on error
+        const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          const btnText = submitBtn.querySelector('span:last-child');
+          if (btnText) btnText.textContent = 'Simpan Perubahan';
+        }
+        
         if (messageDiv) {
           messageDiv.classList.remove('hidden');
           const p = messageDiv.querySelector('p');
@@ -711,5 +759,6 @@ const { data: categories } = await supabase
         }
       }
     });
+  }
   </script>
 </AdminLayout>
